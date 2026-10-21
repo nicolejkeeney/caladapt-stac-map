@@ -3,7 +3,8 @@
 
 export const STAC_API = import.meta.env.VITE_STAC_API ?? "https://stac.cal-adapt.org";
 export const TILER = import.meta.env.VITE_TILER ?? "https://map.cal-adapt.org";
-export const STAC_BROWSER = "https://stac-browser.cal-adapt.org";
+// STAC Browser uses hash routing, so pages live under /#/ (e.g. /#/collections/loca2)
+export const STAC_BROWSER = "https://stac-browser.cal-adapt.org/#";
 
 export const CA_BOUNDS: [number, number, number, number] = [-124.6, 32.4, -114.0, 42.1];
 
@@ -347,3 +348,22 @@ export const SCENARIO_NAMES: Record<string, string> = {
   historical: "Historical (1950–2014)",
   ...Object.fromEntries(SCENARIOS.map((s) => [s.id, s.title])),
 };
+
+// ---------- Catalog topics ----------
+
+// Topic groupings for the Browse page. A collection can sit under more than one.
+export const TOPICS: { id: string; title: string; collections: string[] }[] = [
+  {
+    id: "heat",
+    title: "Temperature and heat",
+    collections: [
+      "eh-metrics-mm-boundary-csv", "ehs-metrics-mm-boundary-csv", "hwf-metrics-mm-boundary-csv", "hwl-metrics-mm-boundary-csv",
+      "loca2", "loca2-county", "wrf-ucla", "wrf-derived-vars", "wrf-climate-metrics-map",
+    ],
+  },
+  { id: "rain", title: "Rain and snow", collections: ["loca2", "loca2-county", "wrf-ucla", "wrf-derived-vars", "wrf-climate-metrics-map"] },
+  { id: "sea-level", title: "Sea level", collections: ["sea-level-projections"] },
+  { id: "energy", title: "Energy", collections: ["pv-generation", "wind-generation", "hdd-cdd-metrics-mm-boundary-csv"] },
+  { id: "stations", title: "Weather stations", collections: ["hadisd", "historical-data-platform"] },
+  { id: "profiles", title: "Building and planning profiles", collections: ["typical-met-year", "standard-year", "xmy-persist", "xmy-shock"] },
+];

@@ -6,7 +6,7 @@ import type { PlacesLayer } from "./components/MapView";
 const geometryCache = new Map<string, Promise<GeoJSON.FeatureCollection>>();
 
 /** Each place collection publishes its unique geometries as an `item-geometries` asset. */
-function loadGeometries(collection: string) {
+export function loadGeometries(collection: string) {
   if (!geometryCache.has(collection)) {
     const p = getCollection(collection).then((c) => {
       const asset = Object.values(c.assets ?? {}).find((a) => a.roles?.includes("item-geometries"));
