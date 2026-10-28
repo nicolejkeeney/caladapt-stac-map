@@ -31,7 +31,10 @@ export default function App() {
     <div className="app">
       <aside className="panel">
         <header className="masthead">
-          <h1>California climate data map</h1>
+          <div className="masthead-title">
+            <img src="bear.png" alt="Cal-Adapt" />
+            <h1>California climate data map</h1>
+          </div>
           <p>Explore how California's climate is projected to change, and download the data behind it.</p>
         </header>
 

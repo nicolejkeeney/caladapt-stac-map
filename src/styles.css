@@ -7,10 +7,11 @@
   --ocean: #4d9de0;
   --wheat: #f7dbb5;
   --goldenrod: #fcc24d;
-  --brand-gradient: linear-gradient(59deg, #fde7c4 0%, var(--wheat) 25%, var(--deep-orange) 100%);
+  /* Blue, so the orange bear logo stands out (as on STAC Browser) */
+  --brand-gradient: linear-gradient(59deg, var(--cobalt) 0%, var(--ocean) 100%);
 
   /* Orange is too light for text on white, so text and controls use cobalt
-     and orange is kept for selection, accents and the masthead. */
+     and orange is kept for selection and accents. */
   --pacific: var(--cobalt);
   --pacific-deep: #1f3e55;
   --granite: #fbf6ef;
@@ -80,10 +81,22 @@ select {
   padding: 22px 22px 18px;
   margin-bottom: 16px;
   background: var(--brand-gradient);
+  color: var(--white);
+}
+
+.masthead-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.masthead-title img {
+  height: 40px;
 }
 
 .masthead h1 {
-  margin: 0 0 6px;
+  margin: 0;
   font-family: var(--display);
   font-weight: 700;
   font-size: 24px;
@@ -94,7 +107,6 @@ select {
   margin: 0;
   font-family: var(--display);
   font-size: 14px;
-  color: #2b2b2b;
 }
 
 .panel-body {
