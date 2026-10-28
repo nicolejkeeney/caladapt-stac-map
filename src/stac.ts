@@ -12,7 +12,13 @@ export interface StacCollection {
   id: string;
   title?: string;
   description: string;
-  assets?: Record<string, { href: string; roles?: string[] }>;
+  keywords?: string[];
+  extent: { spatial: { bbox: number[][] }; temporal: { interval: (string | null)[][] } };
+  assets?: Record<string, { href: string; type?: string; roles?: string[] }>;
+  "caladapt:spatial_type"?: "grid" | "point";
+  "caladapt:variable_labels"?: Record<string, string>;
+  "caladapt:station_labels"?: Record<string, string>;
+  "caladapt:boundary_labels"?: Record<string, string>;
 }
 
 async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
@@ -58,6 +64,12 @@ export function getItem(collection: string, id: string, signal?: AbortSignal): P
 
 export function getCollection(id: string): Promise<StacCollection> {
   return getJson(`${STAC_API}/collections/${id}`);
+}
+
+/** Every collection; the API pages /collections, so ask for more than we have. */
+export async function listCollections(): Promise<StacCollection[]> {
+  const res = await getJson<{ collections: StacCollection[] }>(`${STAC_API}/collections?limit=100`);
+  return res.collections;
 }
 
 export function getGeoJson(url: string): Promise<GeoJSON.FeatureCollection> {

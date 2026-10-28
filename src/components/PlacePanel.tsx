@@ -1,27 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { FREQUENCY_NAMES, PLACE_DATASETS, SCENARIO_NAMES, STAC_BROWSER, VARIABLE_NAMES } from "../config";
+import { FREQUENCY_NAMES, MODEL_NAMES, SCENARIO_NAMES, VARIABLE_NAMES } from "../config";
 import { httpsHref, StacItem } from "../stac";
 import type { PlacesState } from "../usePlaces";
 import CodeBlock from "./CodeBlock";
 
 const LARGE_LIST = 500;
 
-export default function PlacePanel({ p }: { p: PlacesState }) {
+/** `variableLabels` come from the selected collection, for profiles split by variable. */
+export default function PlacePanel({ p, variableLabels }: { p: PlacesState; variableLabels?: Record<string, string> }) {
   return (
     <>
-      <fieldset className="group">
-        <legend>Type of data</legend>
-        {PLACE_DATASETS.map((d) => (
-          <label key={d.id} className="choice">
-            <input type="radio" name="dataset" checked={p.dataset.id === d.id} onChange={() => p.setDatasetId(d.id)} />
-            <span>
-              <strong>{d.title}</strong>
-              <small>{d.blurb}</small>
-            </span>
-          </label>
-        ))}
-      </fieldset>
-
       <PlacePicker p={p} />
 
       {p.status === "error" && <p className="error">The data catalog didn't respond. Check your connection and try again.</p>}
@@ -33,6 +21,8 @@ export default function PlacePanel({ p }: { p: PlacesState }) {
         p.status === "loading" && <p className="note">Finding data for {p.place.name || p.place.id}…</p>
       ) : p.dataset.kind === "county" ? (
         <CountyDetail p={p} items={p.items} />
+      ) : p.dataset.filters ? (
+        <ProfileDetail p={p} items={p.items} variableLabels={variableLabels} />
       ) : (
         <StationDetail p={p} item={p.items[0]} />
       )}
@@ -150,7 +140,6 @@ function CountyDetail({ p, items }: { p: PlacesState; items: StacItem[] }) {
         Files are NetCDF (.nc), covering {fq === "day" ? "every day" : "every month"} from{" "}
         {sc === "historical" ? "1950 to 2014" : "2015 to 2100"}. Open them in Python, R, QGIS or Panoply.
       </p>
-      <CatalogLink collection={p.dataset.collection} item={runs[0]} />
     </section>
   );
 }
@@ -185,9 +174,63 @@ function StationDetail({ p, item }: { p: PlacesState; item: StacItem }) {
         This station's data is stored as Zarr, a cloud format you open with code rather than download. Paste this into Python:
       </p>
       <CodeBlock code={snippet} />
-      <CatalogLink collection={p.dataset.collection} item={item} />
     </section>
   );
+}
+
+function ProfileDetail({ p, items, variableLabels }: { p: PlacesState; items: StacItem[]; variableLabels?: Record<string, string> }) {
+  const [chosen, setChosen] = useState<Record<string, string>>({});
+  const names: Record<string, Record<string, string> | undefined> = { model: MODEL_NAMES, variable: variableLabels };
+
+  // Each filter's options come from the files left after the filters above it
+  let matching = items;
+  const selects = [];
+  for (const f of p.dataset.filters!) {
+    const options = unique(matching, f.property).filter(Boolean);
+    if (options.length === 0) continue;
+    const value = options.includes(chosen[f.property]) ? chosen[f.property] : options[0];
+    matching = matching.filter((i) => prop(i, f.property) === value);
+    selects.push(
+      <Select
+        key={f.property}
+        label={f.label}
+        value={value}
+        onChange={(v) => setChosen({ ...chosen, [f.property]: v })}
+        options={options}
+        names={names[f.property] ?? Object.fromEntries(options.map((o) => [o, readable(o)]))}
+      />,
+    );
+  }
+
+  return (
+    <section className="detail">
+      <h2>{p.place!.name}</h2>
+      <p className="note">{items.length} files available. Narrow them down, then download the one you need.</p>
+      <div className="filters">{selects}</div>
+      <ul className="downloads">
+        {matching.flatMap((item) =>
+          Object.entries(item.assets).map(([key, a]) => (
+            <li key={item.id + key}>
+              <span>
+                {a.title ?? `${key.toUpperCase()} file`}
+                {item.properties["file:size"] && <small>{formatBytes(item.properties["file:size"])}</small>}
+              </span>
+              <a href={httpsHref(a.href)} download>
+                Download
+              </a>
+            </li>
+          )),
+        )}
+      </ul>
+    </section>
+  );
+}
+
+/** "95ptile" -> "95th percentile", "mid-century" -> "Mid-century" */
+function readable(value: string) {
+  const pct = value.match(/^(\d+)ptile$/);
+  if (pct) return `${pct[1]}th percentile`;
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 function Select(props: { label: string; value: string; onChange: (v: string) => void; options: string[]; names?: Record<string, string> }) {
@@ -205,15 +248,6 @@ function Select(props: { label: string; value: string; onChange: (v: string) => 
         ))}
       </select>
     </div>
-  );
-}
-
-function CatalogLink({ collection, item }: { collection: string; item?: StacItem }) {
-  if (!item) return null;
-  return (
-    <a className="catalog-link" href={`${STAC_BROWSER}/collections/${collection}/items/${item.id}`} target="_blank" rel="noreferrer">
-      See full details in the data catalog
-    </a>
   );
 }
 

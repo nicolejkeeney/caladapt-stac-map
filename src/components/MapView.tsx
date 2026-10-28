@@ -28,6 +28,7 @@ export interface Readout {
 interface Props {
   raster: string | null;
   places: PlacesLayer | null;
+  footprint: GeoJSON.FeatureCollection | null;
   selectedPlaceId: string | null;
   readout: Readout | null;
   onReadoutClose: () => void;
@@ -35,9 +36,10 @@ interface Props {
   onMapClick: (lngLat: [number, number]) => void;
 }
 
+const FOOTPRINT_LAYERS = ["footprint-fill", "footprint-line", "footprint-circle"];
 const PLACE_LAYERS = ["places-fill", "places-line", "places-hover", "places-circle", "places-selected"];
 
-export default function MapView({ raster, places, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
+export default function MapView({ raster, places, footprint, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
@@ -144,6 +146,47 @@ export default function MapView({ raster, places, selectedPlaceId, readout, onRe
       });
     }
   }, [places, ready]);
+
+  // Where a dataset from Browse has data. Hovering a station shows its name.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+    FOOTPRINT_LAYERS.forEach((l) => map.getLayer(l) && map.removeLayer(l));
+    if (map.getSource("footprint")) map.removeSource("footprint");
+    if (!footprint) return;
+
+    map.addSource("footprint", { type: "geojson", data: footprint });
+    const polygons = ["==", ["geometry-type"], "Polygon"] as any;
+    map.addLayer({ id: "footprint-fill", type: "fill", source: "footprint", filter: polygons, paint: { "fill-color": OCEAN, "fill-opacity": 0.08 } });
+    map.addLayer({ id: "footprint-line", type: "line", source: "footprint", filter: polygons, paint: { "line-color": PACIFIC, "line-width": 1.5 } });
+    map.addLayer({
+      id: "footprint-circle",
+      type: "circle",
+      source: "footprint",
+      filter: ["==", ["geometry-type"], "Point"],
+      paint: { "circle-radius": 6, "circle-color": HILLS, "circle-stroke-color": "#fff", "circle-stroke-width": 1.5 },
+    });
+
+    const bounds = new maplibregl.LngLatBounds();
+    const extend = (c: any): void => (typeof c[0] === "number" ? void bounds.extend(c) : c.forEach(extend));
+    footprint.features.forEach((f) => f.geometry && "coordinates" in f.geometry && extend(f.geometry.coordinates));
+    if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 60, maxZoom: 7 });
+
+    const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10, className: "name-tip" });
+    const show = (e: maplibregl.MapLayerMouseEvent) => {
+      const p = e.features?.[0]?.properties ?? {};
+      const name = p.station_name ?? p.county_name ?? p.name;
+      if (name) tip.setLngLat(e.lngLat).setText(String(name)).addTo(map);
+    };
+    const hide = () => tip.remove();
+    map.on("mousemove", "footprint-circle", show);
+    map.on("mouseleave", "footprint-circle", hide);
+    return () => {
+      map.off("mousemove", "footprint-circle", show);
+      map.off("mouseleave", "footprint-circle", hide);
+      tip.remove();
+    };
+  }, [footprint, ready]);
 
   useEffect(() => {
     const map = mapRef.current;
