@@ -1,17 +1,6 @@
-import { useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { STAC_BROWSER } from "../config";
 import type { StacCollection } from "../stac";
-
-// Collections one of the map modes can already show
-export type MapTarget = { mode: "climate" | "warming" | "places"; placeDataset?: string };
-
-export const MAP_TARGETS: Record<string, MapTarget> = {
-  loca2: { mode: "climate" },
-  "wrf-climate-metrics-map": { mode: "warming" },
-  "loca2-county": { mode: "places", placeDataset: "counties" },
-  hadisd: { mode: "places", placeDataset: "hadisd" },
-  "historical-data-platform": { mode: "places", placeDataset: "hdp" },
-};
 
 function years(c: StacCollection) {
   const [start, end] = c.extent.temporal.interval[0] ?? [];
@@ -20,9 +9,10 @@ function years(c: StacCollection) {
   return `${y(start) ?? "…"}–${y(end) ?? "present"}`;
 }
 
-export default function CollectionDetail(props: { c: StacCollection; onBack: () => void; onOpenMap: (t: MapTarget) => void }) {
+/** `children` are the map controls, for datasets that have them. */
+export default function CollectionDetail(props: { c: StacCollection; onBack: () => void; children?: ReactNode }) {
   const { c } = props;
-  const target = MAP_TARGETS[c.id];
+  const hasMap = Boolean(props.children);
   const variables = [...new Set(Object.values(c["caladapt:variable_labels"] ?? {}))];
   const boundaries = Object.values(c["caladapt:boundary_labels"] ?? {});
   const stations = Object.keys(c["caladapt:station_labels"] ?? {}).length;
@@ -40,17 +30,11 @@ export default function CollectionDetail(props: { c: StacCollection; onBack: () 
       <button className="back" onClick={props.onBack}>
         All datasets
       </button>
-      {thumb && <img className="collection-hero" src={thumb} alt="" />}
+      {thumb && !hasMap && <img className="collection-hero" src={thumb} alt="" />}
       <h2>{c.title ?? c.id}</h2>
       {c.description.split(/\n\s*\n/).map((para, i) => (
         <p key={i}>{para}</p>
       ))}
-
-      {target && (
-        <button className="primary" onClick={() => props.onOpenMap(target)}>
-          Show on the map
-        </button>
-      )}
 
       <dl className="facts">
         {span && (
@@ -67,7 +51,9 @@ export default function CollectionDetail(props: { c: StacCollection; onBack: () 
         )}
       </dl>
 
-      {variables.length > 0 && <LabelList title="Variables" values={variables} />}
+      {props.children}
+
+      {!hasMap && variables.length > 0 && <LabelList title="Variables" values={variables} />}
       {boundaries.length > 0 && <LabelList title="Summarized by" values={boundaries} />}
 
       <a className="catalog-link" href={`${STAC_BROWSER}/collections/${c.id}`} target="_blank" rel="noreferrer">

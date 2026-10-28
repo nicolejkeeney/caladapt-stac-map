@@ -113,10 +113,10 @@ export const CLIMATE_LAYERS: ClimateLayer[] = [
 // the "historical" model runs.
 export const FIRST_FUTURE_YEAR = 2015;
 
-export const SCENARIOS: { id: string; title: string; blurb: string }[] = [
-  { id: "ssp245", title: "Lower emissions", blurb: "Emissions peak mid-century, then decline (SSP2-4.5)." },
-  { id: "ssp370", title: "Higher emissions", blurb: "Emissions keep rising through 2100 (SSP3-7.0)." },
-  { id: "ssp585", title: "Very high emissions", blurb: "Fossil-fuel-heavy development (SSP5-8.5)." },
+export const SCENARIOS: { id: string; title: string; ssp: string; blurb: string }[] = [
+  { id: "ssp245", title: "Lower emissions", ssp: "SSP2-4.5", blurb: "Emissions peak mid-century, then decline (SSP2-4.5)." },
+  { id: "ssp370", title: "Higher emissions", ssp: "SSP3-7.0", blurb: "Emissions keep rising through 2100 (SSP3-7.0)." },
+  { id: "ssp585", title: "Very high emissions", ssp: "SSP5-8.5", blurb: "Fossil-fuel-heavy development (SSP5-8.5)." },
 ];
 
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -283,21 +283,36 @@ export type PlaceKind = "county" | "station";
 export interface PlaceDataset {
   id: string;
   collection: string;
-  title: string;
-  blurb: string;
   kind: PlaceKind;
   // GeoJSON property that identifies a place, and how to find its items
   idProperty: string;
   nameProperty: string;
   match: { type: "property"; property: string } | { type: "itemId"; prefix: string };
+  // Item properties to narrow a station's files by, in order (building and planning profiles)
+  filters?: { property: string; label: string }[];
 }
+
+// The building and planning profiles share the same 33 stations
+function profile(collection: string, filters: { property: string; label: string }[]): PlaceDataset {
+  return {
+    id: collection,
+    collection,
+    kind: "station",
+    idProperty: "location",
+    nameProperty: "station_name",
+    match: { type: "property", property: "location" },
+    filters,
+  };
+}
+
+const TIME_PERIOD = { property: "time_period", label: "Time period" };
+const MODEL = { property: "model", label: "Climate model" };
+const PERCENTILE = { property: "percentile", label: "Percentile" };
 
 export const PLACE_DATASETS: PlaceDataset[] = [
   {
     id: "counties",
     collection: "loca2-county",
-    title: "Climate projections by county",
-    blurb: "Temperature, precipitation and more, averaged over each county, 1950–2100.",
     kind: "county",
     idProperty: "fips",
     nameProperty: "county_name",
@@ -306,8 +321,6 @@ export const PLACE_DATASETS: PlaceDataset[] = [
   {
     id: "hadisd",
     collection: "hadisd",
-    title: "Long-running weather stations",
-    blurb: "72 quality-controlled stations, some with records back to the 1930s.",
     kind: "station",
     idProperty: "station_id",
     nameProperty: "station_name",
@@ -316,13 +329,20 @@ export const PLACE_DATASETS: PlaceDataset[] = [
   {
     id: "hdp",
     collection: "historical-data-platform",
-    title: "All historical weather stations",
-    blurb: "15,000+ stations across the western US from dozens of networks.",
     kind: "station",
     idProperty: "era_id",
     nameProperty: "era_id",
     match: { type: "itemId", prefix: "" },
   },
+  profile("typical-met-year", [TIME_PERIOD, MODEL]),
+  profile("standard-year", [
+    { property: "variable", label: "Variable" },
+    TIME_PERIOD,
+    { property: "centered_year", label: "Centered year" },
+    PERCENTILE,
+  ]),
+  profile("xmy-persist", [TIME_PERIOD, MODEL, PERCENTILE]),
+  profile("xmy-shock", [TIME_PERIOD, MODEL, { property: "shock_type", label: "Shock type" }]),
 ];
 
 export const VARIABLE_NAMES: Record<string, string> = {
@@ -346,7 +366,7 @@ export const FREQUENCY_NAMES: Record<string, string> = {
 
 export const SCENARIO_NAMES: Record<string, string> = {
   historical: "Historical (1950–2014)",
-  ...Object.fromEntries(SCENARIOS.map((s) => [s.id, s.title])),
+  ...Object.fromEntries(SCENARIOS.map((s) => [s.id, `${s.title} (${s.ssp})`])),
 };
 
 // ---------- Catalog topics ----------
@@ -367,3 +387,18 @@ export const TOPICS: { id: string; title: string; collections: string[] }[] = [
   { id: "stations", title: "Weather stations", collections: ["hadisd", "historical-data-platform"] },
   { id: "profiles", title: "Building and planning profiles", collections: ["typical-met-year", "standard-year", "xmy-persist", "xmy-shock"] },
 ];
+
+// Datasets whose page has an interactive map. Listed first on the Browse page.
+export type DatasetView = { kind: "climate" | "warming" | "places"; placeDataset?: string };
+
+export const DATASET_VIEWS: Record<string, DatasetView> = {
+  loca2: { kind: "climate" },
+  "wrf-climate-metrics-map": { kind: "warming" },
+  "loca2-county": { kind: "places", placeDataset: "counties" },
+  hadisd: { kind: "places", placeDataset: "hadisd" },
+  "historical-data-platform": { kind: "places", placeDataset: "hdp" },
+  "typical-met-year": { kind: "places", placeDataset: "typical-met-year" },
+  "standard-year": { kind: "places", placeDataset: "standard-year" },
+  "xmy-persist": { kind: "places", placeDataset: "xmy-persist" },
+  "xmy-shock": { kind: "places", placeDataset: "xmy-shock" },
+};

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { TOPICS } from "./config";
+import { DATASET_VIEWS, TOPICS } from "./config";
 import { listCollections, StacCollection } from "./stac";
 import { loadGeometries } from "./usePlaces";
 
@@ -26,7 +26,7 @@ export function useCatalog() {
 
   useEffect(() => {
     listCollections()
-      .then((cs) => setCollections(cs.sort((a, b) => (a.title ?? a.id).localeCompare(b.title ?? b.id))))
+      .then((cs) => setCollections(cs.sort(byMapThenTitle)))
       .catch(() => setError(true));
   }, []);
 
@@ -64,6 +64,12 @@ export function useCatalog() {
   }, [selected]);
 
   return { collections, results, error, query, setQuery, topicId, setTopicId, selected, setSelectedId, footprint };
+}
+
+// Datasets with an interactive map first, then alphabetical
+function byMapThenTitle(a: StacCollection, b: StacCollection) {
+  const mapped = Number(b.id in DATASET_VIEWS) - Number(a.id in DATASET_VIEWS);
+  return mapped || (a.title ?? a.id).localeCompare(b.title ?? b.id);
 }
 
 function bboxOutline([w, s, e, n]: number[]): GeoJSON.FeatureCollection {

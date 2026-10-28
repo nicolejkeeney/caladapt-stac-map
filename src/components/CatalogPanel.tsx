@@ -1,7 +1,8 @@
 import { TOPICS } from "../config";
 import type { StacCollection } from "../stac";
 import type { CatalogState } from "../useCatalog";
-import CollectionDetail, { MapTarget } from "./CollectionDetail";
+import { ReactNode } from "react";
+import CollectionDetail from "./CollectionDetail";
 
 function kindOf(c: StacCollection) {
   if (c["caladapt:spatial_type"] === "grid") return "Gridded maps";
@@ -10,9 +11,14 @@ function kindOf(c: StacCollection) {
   return null;
 }
 
-export default function CatalogPanel({ cat, onOpenMap }: { cat: CatalogState; onOpenMap: (t: MapTarget) => void }) {
+/** `mapControls` belong to the selected dataset, when it has an interactive map. */
+export default function CatalogPanel({ cat, mapControls }: { cat: CatalogState; mapControls?: ReactNode }) {
   if (cat.selected) {
-    return <CollectionDetail c={cat.selected} onBack={() => cat.setSelectedId(null)} onOpenMap={onOpenMap} />;
+    return (
+      <CollectionDetail c={cat.selected} onBack={() => cat.setSelectedId(null)}>
+        {mapControls}
+      </CollectionDetail>
+    );
   }
 
   return (
