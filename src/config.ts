@@ -369,25 +369,6 @@ export const SCENARIO_NAMES: Record<string, string> = {
   ...Object.fromEntries(SCENARIOS.map((s) => [s.id, `${s.title} (${s.ssp})`])),
 };
 
-// ---------- Catalog topics ----------
-
-// Topic groupings for the Browse page. A collection can sit under more than one.
-export const TOPICS: { id: string; title: string; collections: string[] }[] = [
-  {
-    id: "heat",
-    title: "Temperature and heat",
-    collections: [
-      "eh-metrics-mm-boundary-csv", "ehs-metrics-mm-boundary-csv", "hwf-metrics-mm-boundary-csv", "hwl-metrics-mm-boundary-csv",
-      "loca2", "loca2-county", "wrf-ucla", "wrf-derived-vars", "wrf-climate-metrics-map",
-    ],
-  },
-  { id: "rain", title: "Rain and snow", collections: ["loca2", "loca2-county", "wrf-ucla", "wrf-derived-vars", "wrf-climate-metrics-map"] },
-  { id: "sea-level", title: "Sea level", collections: ["sea-level-projections"] },
-  { id: "energy", title: "Energy", collections: ["pv-generation", "wind-generation", "hdd-cdd-metrics-mm-boundary-csv"] },
-  { id: "stations", title: "Weather stations", collections: ["hadisd", "historical-data-platform"] },
-  { id: "profiles", title: "Building and planning profiles", collections: ["typical-met-year", "standard-year", "xmy-persist", "xmy-shock"] },
-];
-
 // Datasets whose page has an interactive map. Listed first on the Browse page.
 export type DatasetView = { kind: "climate" | "warming" | "places"; placeDataset?: string };
 

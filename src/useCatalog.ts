@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { DATASET_VIEWS, TOPICS } from "./config";
+import { DATASET_VIEWS } from "./config";
 import { listCollections, StacCollection } from "./stac";
 import { loadGeometries } from "./usePlaces";
 
@@ -21,7 +21,7 @@ export function useCatalog() {
   const [collections, setCollections] = useState<StacCollection[] | null>(null);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
-  const [topicId, setTopicId] = useState<string | null>(null);
+  const [keyword, setKeyword] = useState<string | null>(null);
   // ?dataset=<collection id> opens that dataset, so STAC Browser and shared
   // links can land on it
   const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(location.search).get("dataset"));
@@ -39,16 +39,18 @@ export function useCatalog() {
       .catch(() => setError(true));
   }, []);
 
+  // The catalog's keywords are a short shared topic list, so they work as filter chips
+  const keywords = useMemo(() => [...new Set((collections ?? []).flatMap((c) => c.keywords ?? []))].sort((a, b) => a.localeCompare(b)), [collections]);
+
   const results = useMemo(() => {
     if (!collections) return [];
-    const topic = TOPICS.find((t) => t.id === topicId);
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return collections.filter((c) => {
-      if (topic && !topic.collections.includes(c.id)) return false;
+      if (keyword && !c.keywords?.includes(keyword)) return false;
       const text = searchText(c);
       return words.every((w) => text.includes(w));
     });
-  }, [collections, query, topicId]);
+  }, [collections, query, keyword]);
 
   const selected = collections?.find((c) => c.id === selectedId) ?? null;
 
@@ -72,7 +74,7 @@ export function useCatalog() {
     };
   }, [selected]);
 
-  return { collections, results, error, query, setQuery, topicId, setTopicId, selected, setSelectedId, footprint };
+  return { collections, results, error, query, setQuery, keywords, keyword, setKeyword, selected, setSelectedId, footprint };
 }
 
 // Datasets with an interactive map first, then alphabetical

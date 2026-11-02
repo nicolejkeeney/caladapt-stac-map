@@ -1,4 +1,3 @@
-import { TOPICS } from "../config";
 import type { StacCollection } from "../stac";
 import type { CatalogState } from "../useCatalog";
 import { ReactNode } from "react";
@@ -37,13 +36,9 @@ export default function CatalogPanel({ cat, mapControls }: { cat: CatalogState; 
       </div>
 
       <div className="topics" role="group" aria-label="Topics">
-        {TOPICS.map((t) => (
-          <button
-            key={t.id}
-            aria-pressed={cat.topicId === t.id}
-            onClick={() => cat.setTopicId(cat.topicId === t.id ? null : t.id)}
-          >
-            {t.title}
+        {cat.keywords.map((k) => (
+          <button key={k} aria-pressed={cat.keyword === k} onClick={() => cat.setKeyword(cat.keyword === k ? null : k)}>
+            {k.charAt(0).toUpperCase() + k.slice(1)}
           </button>
         ))}
       </div>
