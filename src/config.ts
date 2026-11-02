@@ -8,7 +8,7 @@ export const STAC_BROWSER = import.meta.env.VITE_STAC_BROWSER ?? "https://stac-b
 
 export const CA_BOUNDS: [number, number, number, number] = [-124.6, 32.4, -114.0, 42.1];
 
-// ---------- Gridded climate layers (LOCA2 via the tiler) ----------
+// ---------- Gridded climate layers (via the tiler) ----------
 
 export type Frequency = "yrmax" | "mon";
 
@@ -34,7 +34,7 @@ export interface ClimateLayer {
 const kelvinToF: Unit = { label: "°F", convert: (k) => ((k - 273.15) * 9) / 5 + 32, digits: 0 };
 
 
-export const CLIMATE_LAYERS: ClimateLayer[] = [
+const LOCA2_LAYERS: ClimateLayer[] = [
   {
     id: "hottest-day",
     title: "Hottest day of the year",
@@ -108,6 +108,24 @@ export const CLIMATE_LAYERS: ClimateLayer[] = [
     unit: { label: "mph", convert: (v) => v * 2.237, digits: 1 },
   },
 ];
+
+// Gridded climate-model collections that share the map view: one entry per
+// STAC collection, with the item filters that pick its California grid.
+export interface GriddedDataset {
+  filters: Record<string, string>;
+  layers: ClimateLayer[];
+  about: string;
+  aboutTerm?: { slug: keyof typeof import("./data/glossary.json"); label: string }; // a phrase in `about` linked to the glossary
+}
+
+export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
+  loca2: {
+    filters: {},
+    layers: LOCA2_LAYERS,
+    about: "LOCA2: 15 climate models statistically downscaled to a 3 km grid by UC San Diego.",
+    aboutTerm: { slug: "statistical-downscaling", label: "statistically downscaled" },
+  },
+};
 
 // The scenario is only meaningful from 2015 onward; earlier years come from
 // the "historical" model runs.

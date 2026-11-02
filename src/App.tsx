@@ -15,7 +15,7 @@ import { useWarming } from "./useWarming";
 export default function App() {
   const catalog = useCatalog();
   const view = catalog.selected ? DATASET_VIEWS[catalog.selected.id] : undefined;
-  const climate = useClimate(view?.kind === "climate");
+  const climate = useClimate(view?.kind === "climate", view?.kind === "climate" ? catalog.selected?.id : undefined);
   const warming = useWarming(view?.kind === "warming");
   const places = usePlaces(view?.kind === "places");
 

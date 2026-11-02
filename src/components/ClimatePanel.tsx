@@ -1,4 +1,4 @@
-import { CLIMATE_LAYERS, GUIDANCE_SITE, MODEL_NAMES, MONTHS, SCENARIOS, STAC_BROWSER } from "../config";
+import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, SCENARIOS, STAC_BROWSER } from "../config";
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
@@ -27,6 +27,19 @@ export function readoutFor(c: ClimateState) {
   };
 }
 
+/** The dataset's description, with its glossary phrase linked. */
+function About({ text, term }: { text: string; term?: GriddedDataset["aboutTerm"] }) {
+  const at = term ? text.indexOf(term.label) : -1;
+  if (!term || at < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, at)}
+      <Term slug={term.slug}>{term.label}</Term>
+      {text.slice(at + term.label.length)}
+    </>
+  );
+}
+
 export default function ClimatePanel({ c }: { c: ClimateState }) {
   return (
     <>
@@ -34,7 +47,7 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
 
       <fieldset className="group">
         <legend>What to show</legend>
-        {CLIMATE_LAYERS.map((l) => (
+        {c.dataset.layers.map((l) => (
           <label key={l.id} className="choice">
             <input type="radio" name="layer" checked={c.layer.id === l.id} onChange={() => c.setLayerId(l.id)} />
             <span>
@@ -78,7 +91,7 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
       <div className="group">
         <span className="field-label">About this data</span>
         <p className="note">
-          LOCA2: 15 climate models <Term slug="statistical-downscaling">statistically downscaled</Term> to a 3 km grid by UC San Diego.
+          <About text={c.dataset.about} term={c.dataset.aboutTerm} />
         </p>
         <ul className="link-list">
           <li>
@@ -94,7 +107,7 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
         </ul>
       </div>
 
-      {c.item && (
+      {c.item && c.collection === "loca2" && (
         <GetData
           {...loca2Methods(c.item, c.layer.variable, c.layer.frequency === "yrmax" ? `${c.year}` : c.datetime.slice(0, 7))}
           catalogLink={`${STAC_BROWSER}/collections/${c.item.collection}/items/${c.item.id}`}

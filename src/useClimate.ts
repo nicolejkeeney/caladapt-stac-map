@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CLIMATE_LAYERS, FIRST_FUTURE_YEAR, SCENARIOS } from "./config";
+import { FIRST_FUTURE_YEAR, GRIDDED_DATASETS, SCENARIOS } from "./config";
 import { buildColorTable } from "./colormap";
 import { eq, pointValue, searchAll, StacItem, tileUrl } from "./stac";
 
 const cache = new Map<string, Promise<StacItem[]>>();
 
-function loadItems(variable: string, frequency: string): Promise<StacItem[]> {
-  const key = `${variable}/${frequency}`;
+function loadItems(collection: string, filters: Record<string, string>, variable: string, frequency: string): Promise<StacItem[]> {
+  const key = `${collection}/${variable}/${frequency}`;
   if (!cache.has(key)) {
-    const p = searchAll("loca2", [eq("variable_id", variable), eq("cmip6:table_id", frequency)]);
+    const where = Object.entries(filters).map(([k, v]) => eq(k, v));
+    const p = searchAll(collection, [eq("variable_id", variable), eq("cmip6:table_id", frequency), ...where]);
     p.catch(() => cache.delete(key));
     cache.set(key, p);
   }
@@ -30,8 +31,9 @@ export interface Probe {
   value: number | null;
 }
 
-export function useClimate(active: boolean) {
-  const [layerId, setLayerId] = useState(CLIMATE_LAYERS[0].id);
+export function useClimate(active: boolean, collection = "loca2") {
+  const dataset = GRIDDED_DATASETS[collection] ?? GRIDDED_DATASETS.loca2;
+  const [layerId, setLayerId] = useState(dataset.layers[0].id);
   const [scenario, setScenario] = useState(SCENARIOS[1].id);
   const [model, setModel] = useState("");
   const [year, setYear] = useState(2050);
@@ -40,23 +42,29 @@ export function useClimate(active: boolean) {
   const [error, setError] = useState<string | null>(null);
   const [probe, setProbe] = useState<Probe | null>(null);
 
-  const layer = CLIMATE_LAYERS.find((l) => l.id === layerId)!;
+  const layer = dataset.layers.find((l) => l.id === layerId) ?? dataset.layers[0];
   const chooseLayer = (id: string) => {
     setLayerId(id);
-    setMonth(CLIMATE_LAYERS.find((l) => l.id === id)!.defaultMonth ?? 6);
+    setMonth(dataset.layers.find((l) => l.id === id)!.defaultMonth ?? 6);
   };
+
+  // Each dataset starts on its first layer
+  useEffect(() => {
+    chooseLayer(dataset.layers[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collection]);
 
   useEffect(() => {
     let stale = false;
     setItems(null);
     setError(null);
-    loadItems(layer.variable, layer.frequency)
+    loadItems(collection, dataset.filters, layer.variable, layer.frequency)
       .then((res) => !stale && setItems(res))
       .catch(() => !stale && setError("The data catalog didn't respond. Check your connection and pick the layer again."));
     return () => {
       stale = true;
     };
-  }, [layer.variable, layer.frequency]);
+  }, [collection, layer.variable, layer.frequency]);
 
   // Models that have a run for the chosen scenario
   const models = useMemo(() => {
@@ -112,6 +120,8 @@ export function useClimate(active: boolean) {
   }, [probeAt?.[0], probeAt?.[1], item?.id, datetime, active]);
 
   return {
+    collection,
+    dataset,
     layer,
     setLayerId: chooseLayer,
     scenario,
