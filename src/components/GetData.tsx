@@ -34,7 +34,7 @@ export default function GetData({ methods, browse, catalogLink }: Props) {
         </li>
         {catalogLink && (
           <li>
-            <a href={catalogLink} target="_blank" rel="noreferrer">
+            <a href={catalogLink}>
               See it in the data catalog
             </a>
           </li>

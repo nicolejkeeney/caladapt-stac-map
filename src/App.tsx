@@ -69,7 +69,7 @@ export default function App() {
           </div>
 
           <footer className="panel-foot">
-            <a href={STAC_BROWSER} target="_blank" rel="noreferrer">
+            <a href={STAC_BROWSER}>
               Open the full catalog in STAC Browser
             </a>
             <span>Data from Cal-Adapt</span>

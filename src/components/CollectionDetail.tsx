@@ -56,7 +56,7 @@ export default function CollectionDetail(props: { c: StacCollection; onBack: () 
       {!hasMap && variables.length > 0 && <LabelList title="Variables" values={variables} />}
       {boundaries.length > 0 && <LabelList title="Summarized by" values={boundaries} />}
 
-      <a className="catalog-link" href={`${STAC_BROWSER}/collections/${c.id}`} target="_blank" rel="noreferrer">
+      <a className="catalog-link" href={`${STAC_BROWSER}/collections/${c.id}`}>
         See full details in STAC Browser
       </a>
     </section>
