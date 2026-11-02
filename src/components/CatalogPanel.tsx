@@ -3,11 +3,12 @@ import type { CatalogState } from "../useCatalog";
 import { ReactNode } from "react";
 import CollectionDetail from "./CollectionDetail";
 
+// The form of each collection's data, from its caladapt:spatial_type
+const KINDS = { grid: "Gridded maps", point: "Locations", county: "Area summaries", boundary: "Area summaries" };
+
 function kindOf(c: StacCollection) {
-  if (c["caladapt:spatial_type"] === "grid") return "Gridded maps";
-  if (c["caladapt:spatial_type"] === "point") return "Locations";
-  if (c["caladapt:boundary_labels"]) return "Area summaries";
-  return null;
+  const type = c["caladapt:spatial_type"];
+  return type ? KINDS[type] : null;
 }
 
 /** `mapControls` belong to the selected dataset, when it has an interactive map. */
