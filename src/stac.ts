@@ -15,7 +15,7 @@ export interface StacCollection {
   keywords?: string[];
   extent: { spatial: { bbox: number[][] }; temporal: { interval: (string | null)[][] } };
   assets?: Record<string, { href: string; type?: string; roles?: string[] }>;
-  "caladapt:spatial_type"?: "grid" | "point" | "county" | "boundary";
+  "caladapt:spatial_type"?: "grid" | "point" | "county" | "boundary-aggregate";
   "caladapt:variable_labels"?: Record<string, string>;
   "caladapt:station_labels"?: Record<string, string>;
   "caladapt:boundary_labels"?: Record<string, string>;
