@@ -4,7 +4,7 @@
 export const STAC_API = import.meta.env.VITE_STAC_API ?? "https://stac.cal-adapt.org";
 export const TILER = import.meta.env.VITE_TILER ?? "https://map.cal-adapt.org";
 // STAC Browser uses hash routing, so pages live under /#/ (e.g. /#/collections/loca2)
-export const STAC_BROWSER = "https://stac-browser.cal-adapt.org/#";
+export const STAC_BROWSER = import.meta.env.VITE_STAC_BROWSER ?? "https://stac-browser.cal-adapt.org/#";
 
 export const CA_BOUNDS: [number, number, number, number] = [-124.6, 32.4, -114.0, 42.1];
 

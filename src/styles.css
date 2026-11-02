@@ -62,9 +62,66 @@ select {
 }
 
 .app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: var(--panel-width) 1fr;
-  height: 100dvh;
+}
+
+/* ---------- Site header (shared with STAC Browser) ---------- */
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 24px;
+  padding: 0 22px;
+  background: var(--brand-gradient);
+  color: var(--white);
+}
+
+.site-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.site-title img {
+  height: 32px;
+}
+
+.site-tabs {
+  display: flex;
+  align-self: stretch;
+}
+
+.site-tabs a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border-bottom: 4px solid transparent;
+  color: var(--white);
+  text-decoration: none;
+}
+
+.site-tabs a:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.5);
+}
+
+.site-tabs a[aria-current="page"] {
+  border-bottom-color: var(--goldenrod);
+  font-weight: 500;
 }
 
 /* ---------- Panel ---------- */
@@ -78,35 +135,22 @@ select {
 }
 
 .masthead {
-  padding: 22px 22px 18px;
-  margin-bottom: 16px;
-  background: var(--brand-gradient);
-  color: var(--white);
-}
-
-.masthead-title {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-
-.masthead-title img {
-  height: 40px;
+  padding: 20px 22px 6px;
 }
 
 .masthead h1 {
-  margin: 0;
+  margin: 0 0 6px;
   font-family: var(--display);
   font-weight: 700;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1.15;
+  color: var(--pacific-deep);
 }
 
 .masthead p {
   margin: 0;
-  font-family: var(--display);
   font-size: 14px;
+  color: var(--muted);
 }
 
 .panel-body {
@@ -589,6 +633,15 @@ input:not([type]) {
 
 @media (max-width: 760px) {
   .app {
+    height: auto;
+    min-height: 100dvh;
+  }
+
+  .site-header {
+    padding: 0 16px;
+  }
+
+  .workspace {
     grid-template-columns: 1fr;
     grid-template-rows: 58dvh auto;
     height: auto;

@@ -27,57 +27,73 @@ export default function App() {
 
   const readout = view?.kind === "climate" ? readoutFor(climate) : view?.kind === "warming" ? warmingReadout(warming) : null;
 
+  // The Catalog tab opens STAC Browser on the dataset being viewed, if any
+  const catalogHref = catalog.selected ? `${STAC_BROWSER}/collections/${catalog.selected.id}` : STAC_BROWSER;
+
   return (
     <div className="app">
-      <aside className="panel">
-        <header className="masthead">
-          <div className="masthead-title">
-            <img src="bear.png" alt="Cal-Adapt" />
-            <h1>California climate data map</h1>
-          </div>
-          <p>Explore how California's climate is projected to change, and download the data behind it.</p>
-        </header>
-
-        <div className="panel-body">
-          <CatalogPanel
-            cat={catalog}
-            mapControls={
-              view?.kind === "climate" ? (
-                <ClimatePanel c={climate} />
-              ) : view?.kind === "warming" ? (
-                <WarmingPanel w={warming} />
-              ) : view?.kind === "places" ? (
-                <PlacePanel p={places} variableLabels={catalog.selected?.["caladapt:variable_labels"]} />
-              ) : undefined
-            }
-          />
+      {/* Shared with STAC Browser, so the map and catalog read as one site */}
+      <header className="site-header">
+        <div className="site-title">
+          <img src="bear.png" alt="" />
+          <span>Cal-Adapt climate data</span>
         </div>
-
-        <footer className="panel-foot">
-          <a href={STAC_BROWSER} target="_blank" rel="noreferrer">
-            Open the full catalog in STAC Browser
+        <nav className="site-tabs" aria-label="Views">
+          <a href="./" aria-current="page">
+            Map
           </a>
-          <span>Data from Cal-Adapt</span>
-        </footer>
-      </aside>
+          <a href={catalogHref}>Catalog</a>
+        </nav>
+      </header>
 
-      <main className="stage">
-        <MapView
-          raster={climate.raster ?? warming.raster}
-          places={places.layer}
-          footprint={view ? null : catalog.footprint}
-          selectedPlaceId={places.place?.id ?? null}
-          readout={readout}
-          onReadoutClose={() => (view?.kind === "climate" ? climate.setProbeAt(null) : warming.setProbeAt(null))}
-          onPlaceClick={(id, name) => places.setPlace({ id, name })}
-          onMapClick={(lngLat) => {
-            if (view?.kind === "climate") climate.setProbeAt(lngLat);
-            if (view?.kind === "warming") warming.setProbeAt(lngLat);
-          }}
-        />
-        {view?.kind === "climate" && <TimeBar c={climate} />}
-        {view?.kind === "warming" && <WarmingBar w={warming} />}
-      </main>
+      <div className="workspace">
+        <aside className="panel">
+          <header className="masthead">
+            <h1>California climate data map</h1>
+            <p>Explore how California's climate is projected to change, and download the data behind it.</p>
+          </header>
+
+          <div className="panel-body">
+            <CatalogPanel
+              cat={catalog}
+              mapControls={
+                view?.kind === "climate" ? (
+                  <ClimatePanel c={climate} />
+                ) : view?.kind === "warming" ? (
+                  <WarmingPanel w={warming} />
+                ) : view?.kind === "places" ? (
+                  <PlacePanel p={places} variableLabels={catalog.selected?.["caladapt:variable_labels"]} />
+                ) : undefined
+              }
+            />
+          </div>
+
+          <footer className="panel-foot">
+            <a href={STAC_BROWSER} target="_blank" rel="noreferrer">
+              Open the full catalog in STAC Browser
+            </a>
+            <span>Data from Cal-Adapt</span>
+          </footer>
+        </aside>
+
+        <main className="stage">
+          <MapView
+            raster={climate.raster ?? warming.raster}
+            places={places.layer}
+            footprint={view ? null : catalog.footprint}
+            selectedPlaceId={places.place?.id ?? null}
+            readout={readout}
+            onReadoutClose={() => (view?.kind === "climate" ? climate.setProbeAt(null) : warming.setProbeAt(null))}
+            onPlaceClick={(id, name) => places.setPlace({ id, name })}
+            onMapClick={(lngLat) => {
+              if (view?.kind === "climate") climate.setProbeAt(lngLat);
+              if (view?.kind === "warming") warming.setProbeAt(lngLat);
+            }}
+          />
+          {view?.kind === "climate" && <TimeBar c={climate} />}
+          {view?.kind === "warming" && <WarmingBar w={warming} />}
+        </main>
+      </div>
     </div>
   );
 }
