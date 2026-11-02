@@ -36,7 +36,7 @@ export default function App() {
       <header className="site-header">
         <div className="site-title">
           <img src="bear.png" alt="" />
-          <span>Cal-Adapt climate data</span>
+          <span>Cal-Adapt climate data catalog</span>
         </div>
         <nav className="site-tabs" aria-label="Views">
           <a href="./" aria-current="page">
