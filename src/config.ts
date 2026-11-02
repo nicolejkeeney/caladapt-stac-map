@@ -10,7 +10,7 @@ export const CA_BOUNDS: [number, number, number, number] = [-124.6, 32.4, -114.0
 
 // ---------- Gridded climate layers (via the tiler) ----------
 
-export type Frequency = "yrmax" | "mon";
+export type Frequency = "yrmax" | "mon" | "1hr";
 
 export interface Unit {
   label: string;

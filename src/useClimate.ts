@@ -25,6 +25,8 @@ function pickItem(items: StacItem[], model: string, experiment: string): StacIte
     .sort((a, b) => (prop(a, "member_id") === "r1i1p1f1" ? -1 : prop(a, "member_id").localeCompare(prop(b, "member_id"))))[0];
 }
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
 export interface Probe {
   lngLat: [number, number];
   status: "loading" | "done" | "error";
@@ -36,8 +38,8 @@ export function useClimate(active: boolean, collection = "loca2") {
   const [layerId, setLayerId] = useState(dataset.layers[0].id);
   const [scenario, setScenario] = useState(SCENARIOS[1].id);
   const [model, setModel] = useState("");
-  const [year, setYear] = useState(2050);
-  const [month, setMonth] = useState(6); // July, 0-based
+  // The time on the map, as a UTC timestamp; how precise it is depends on the layer
+  const [time, setTimeRaw] = useState(() => Date.UTC(2050, 6, 1));
   const [items, setItems] = useState<StacItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [probe, setProbe] = useState<Probe | null>(null);
@@ -45,7 +47,8 @@ export function useClimate(active: boolean, collection = "loca2") {
   const layer = dataset.layers.find((l) => l.id === layerId) ?? dataset.layers[0];
   const chooseLayer = (id: string) => {
     setLayerId(id);
-    setMonth(dataset.layers.find((l) => l.id === id)!.defaultMonth ?? 6);
+    const month = dataset.layers.find((l) => l.id === id)!.defaultMonth ?? 6;
+    setTimeRaw((t) => Date.UTC(new Date(t).getUTCFullYear(), month, 1));
   };
 
   // Each dataset starts on its first layer
@@ -80,13 +83,47 @@ export function useClimate(active: boolean, collection = "loca2") {
   const hasHistorical = !!items && !!model && !!pickItem(items, model, "historical");
   const minYear = hasHistorical ? 1950 : FIRST_FUTURE_YEAR;
   const maxYear = 2100;
+  const clamp = (t: number) => Math.min(Math.max(t, Date.UTC(minYear, 0, 1)), Date.UTC(maxYear, 11, 31, 23));
+  const setTime = (t: number) => setTimeRaw(clamp(t));
   useEffect(() => {
-    if (year < minYear) setYear(minYear);
-  }, [minYear, year]);
+    setTimeRaw((t) => clamp(t));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minYear, maxYear]);
+
+  const d = new Date(time);
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth(); // 0-based
+  const day = d.getUTCDate();
+  const hour = d.getUTCHours();
+
+  const atStart =
+    layer.frequency === "yrmax" ? year <= minYear : layer.frequency === "mon" ? year <= minYear && month === 0 : time <= Date.UTC(minYear, 0, 1);
+  const atEnd =
+    layer.frequency === "yrmax"
+      ? year >= maxYear
+      : layer.frequency === "mon"
+        ? year >= maxYear && month === 11
+        : time >= Date.UTC(maxYear, 11, 31, 23);
+
+  /** Move by n of the layer's time steps: years, months or hours. */
+  const step = (n: number) =>
+    setTimeRaw((t) => {
+      const at = new Date(t);
+      const y = at.getUTCFullYear();
+      const m = at.getUTCMonth();
+      return clamp(
+        layer.frequency === "yrmax" ? Date.UTC(y + n, m, 1) : layer.frequency === "mon" ? Date.UTC(y, m + n, 1) : t + n * 3600_000,
+      );
+    });
 
   const experiment = year < FIRST_FUTURE_YEAR ? "historical" : scenario;
   const item = items && model ? pickItem(items, model, experiment) : undefined;
-  const datetime = layer.frequency === "yrmax" ? `${year}-01-01` : `${year}-${String(month + 1).padStart(2, "0")}-01`;
+  const datetime =
+    layer.frequency === "yrmax"
+      ? `${year}-01-01`
+      : layer.frequency === "mon"
+        ? `${year}-${pad(month + 1)}-01`
+        : `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:00:00`;
 
   // Tiles take about a second each, so wait until the slider settles
   const liveUrl = item
@@ -129,10 +166,15 @@ export function useClimate(active: boolean, collection = "loca2") {
     model,
     setModel,
     models,
+    time,
+    setTime,
+    step,
+    atStart,
+    atEnd,
     year,
-    setYear,
     month,
-    setMonth,
+    day,
+    hour,
     minYear,
     maxYear,
     experiment,

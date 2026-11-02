@@ -17,7 +17,12 @@ export const modelName = (id: string) => MODEL_NAMES[id] ?? id.toUpperCase();
 
 export function readoutFor(c: ClimateState) {
   if (!c.probe) return null;
-  const when = c.layer.frequency === "yrmax" ? `${c.year}` : `${MONTHS[c.month]} ${c.year}`;
+  const when =
+    c.layer.frequency === "yrmax"
+      ? `${c.year}`
+      : c.layer.frequency === "mon"
+        ? `${MONTHS[c.month]} ${c.year}`
+        : `${MONTHS[c.month]} ${c.day}, ${c.year}, ${String(c.hour).padStart(2, "0")}:00 UTC`;
   const { status, value } = c.probe;
   return {
     lngLat: c.probe.lngLat,
@@ -43,7 +48,7 @@ function About({ text, term }: { text: string; term?: GriddedDataset["aboutTerm"
 export default function ClimatePanel({ c }: { c: ClimateState }) {
   return (
     <>
-      <p className="hint">Click anywhere on the map to read the value at that spot. Use the slider to move through time.</p>
+      <p className="hint">Click anywhere on the map to read the value at that spot. Use the controls under the map to move through time.</p>
 
       <fieldset className="group">
         <legend>What to show</legend>
