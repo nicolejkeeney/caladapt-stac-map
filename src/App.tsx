@@ -39,19 +39,21 @@ export default function App() {
           <span>Cal-Adapt climate data catalog</span>
         </div>
         <nav className="site-tabs" aria-label="Views">
+          <a href={catalogHref}>Catalog</a>
           <a href="./" aria-current="page">
             Map
           </a>
-          <a href={catalogHref}>Catalog</a>
         </nav>
       </header>
 
       <div className="workspace">
         <aside className="panel">
-          <header className="masthead">
-            <h1>California climate data map</h1>
-            <p>Explore how California's climate is projected to change, and download the data behind it.</p>
-          </header>
+          {/* The site header already names the page, so the heading is for screen readers;
+              the intro shows only until a dataset is picked */}
+          <h1 className="visually-hidden">California climate data map</h1>
+          {!catalog.selected && (
+            <p className="intro">Explore how California's climate is projected to change, and download the data behind it.</p>
+          )}
 
           <div className="panel-body">
             <CatalogPanel

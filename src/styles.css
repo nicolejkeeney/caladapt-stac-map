@@ -134,23 +134,21 @@ select {
   border-right: 1px solid var(--line);
 }
 
-.masthead {
-  padding: 20px 22px 6px;
-}
-
-.masthead h1 {
-  margin: 0 0 6px;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 22px;
-  line-height: 1.15;
-  color: var(--pacific-deep);
-}
-
-.masthead p {
+.intro {
   margin: 0;
+  padding: 20px 22px 6px;
   font-size: 14px;
   color: var(--muted);
+}
+
+/* Read by screen readers, not shown */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .panel-body {
@@ -656,7 +654,7 @@ input:not([type]) {
     border-right: 0;
   }
 
-  .masthead,
+  .intro,
   .panel-body,
   .panel-foot {
     padding-left: 16px;

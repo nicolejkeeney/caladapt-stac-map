@@ -57,7 +57,7 @@ export default function CollectionDetail(props: { c: StacCollection; onBack: () 
       {boundaries.length > 0 && <LabelList title="Summarized by" values={boundaries} />}
 
       <a className="catalog-link" href={`${STAC_BROWSER}/collections/${c.id}`}>
-        See full details in STAC Browser
+        See full details in the catalog
       </a>
     </section>
   );
