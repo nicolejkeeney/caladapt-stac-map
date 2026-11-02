@@ -22,7 +22,16 @@ export function useCatalog() {
   const [error, setError] = useState(false);
   const [query, setQuery] = useState("");
   const [topicId, setTopicId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // ?dataset=<collection id> opens that dataset, so STAC Browser and shared
+  // links can land on it
+  const [selectedId, setSelectedId] = useState<string | null>(() => new URLSearchParams(location.search).get("dataset"));
+
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (selectedId) url.searchParams.set("dataset", selectedId);
+    else url.searchParams.delete("dataset");
+    history.replaceState(null, "", url);
+  }, [selectedId]);
 
   useEffect(() => {
     listCollections()
