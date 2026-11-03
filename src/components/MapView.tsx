@@ -15,6 +15,8 @@ export interface PlacesLayer {
   kind: PlaceKind;
   idProperty: string;
   nameProperty: string;
+  // Color each area by a feature property, in bins (boundary summaries)
+  fill?: { property: string; edges: number[]; colors: string[] };
 }
 
 export interface Readout {
@@ -119,7 +121,11 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
     map.addSource("places", { type: "geojson", data: places.geojson });
     const none = ["==", ["get", places.idProperty], "__none__"] as any;
     if (places.kind === "county") {
-      map.addLayer({ id: "places-fill", type: "fill", source: "places", paint: { "fill-color": OCEAN, "fill-opacity": 0.1 } });
+      const fill = places.fill;
+      const fillColor: any = fill
+        ? ["case", ["==", ["get", fill.property], null], "#e6e6e6", ["step", ["get", fill.property], fill.colors[0], ...fill.edges.slice(1, -1).flatMap((e, i) => [e, fill.colors[i + 1]])]]
+        : OCEAN;
+      map.addLayer({ id: "places-fill", type: "fill", source: "places", paint: { "fill-color": fillColor, "fill-opacity": fill ? 0.8 : 0.1 } });
       map.addLayer({ id: "places-line", type: "line", source: "places", paint: { "line-color": PACIFIC, "line-width": 0.8, "line-opacity": 0.6 } });
       map.addLayer({ id: "places-hover", type: "fill", source: "places", filter: none, paint: { "fill-color": OCEAN, "fill-opacity": 0.3 } });
       map.addLayer({ id: "places-selected", type: "line", source: "places", filter: none, paint: { "line-color": HILLS, "line-width": 3 } });

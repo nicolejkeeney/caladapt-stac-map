@@ -575,6 +575,32 @@ input:not([type]) {
   }
 }
 
+/* A county's values at each warming level (boundary summaries) */
+.levels-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.levels-table th,
+.levels-table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.levels-table th {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.levels-table tr.on td {
+  font-weight: 700;
+  color: var(--pacific-deep);
+}
+
 .levels {
   display: flex;
   gap: 6px;

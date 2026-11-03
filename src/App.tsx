@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import MapView from "./components/MapView";
 import CatalogPanel from "./components/CatalogPanel";
+import BoundaryPanel, { BoundaryBar } from "./components/BoundaryPanel";
 import ClimatePanel, { readoutFor } from "./components/ClimatePanel";
 import PlacePanel from "./components/PlacePanel";
 import TimeBar from "./components/TimeBar";
 import WarmingBar from "./components/WarmingBar";
 import WarmingPanel, { warmingReadout } from "./components/WarmingPanel";
 import { DATASET_VIEWS, STAC_BROWSER } from "./config";
+import { useBoundary } from "./useBoundary";
 import { useCatalog } from "./useCatalog";
 import { useClimate } from "./useClimate";
 import { usePlaces } from "./usePlaces";
@@ -18,6 +20,7 @@ export default function App() {
   const climate = useClimate(view?.kind === "climate", view?.kind === "climate" ? catalog.selected?.id : undefined);
   const warming = useWarming(view?.kind === "warming");
   const places = usePlaces(view?.kind === "places");
+  const boundary = useBoundary(view?.kind === "boundary", view?.kind === "boundary" ? catalog.selected?.id : undefined);
 
   const placeDataset = view?.placeDataset;
   useEffect(() => {
@@ -62,6 +65,8 @@ export default function App() {
                   <WarmingPanel w={warming} />
                 ) : view?.kind === "places" ? (
                   <PlacePanel p={places} variableLabels={catalog.selected?.["caladapt:variable_labels"]} />
+                ) : view?.kind === "boundary" ? (
+                  <BoundaryPanel b={boundary} />
                 ) : undefined
               }
             />
@@ -76,12 +81,12 @@ export default function App() {
           <MapView
             raster={climate.raster ?? warming.raster}
             rasterTileSize={climate.raster ? climate.dataset.tileSize : undefined}
-            places={places.layer}
+            places={places.layer ?? boundary.layer}
             footprint={view ? null : catalog.footprint}
-            selectedPlaceId={places.place?.id ?? null}
+            selectedPlaceId={(view?.kind === "boundary" ? boundary.place : places.place)?.id ?? null}
             readout={readout}
             onReadoutClose={() => (view?.kind === "climate" ? climate.setProbeAt(null) : warming.setProbeAt(null))}
-            onPlaceClick={(id, name) => places.setPlace({ id, name })}
+            onPlaceClick={(id, name) => (view?.kind === "boundary" ? boundary.setPlace : places.setPlace)({ id, name })}
             onMapClick={(lngLat) => {
               if (view?.kind === "climate") climate.setProbeAt(lngLat);
               if (view?.kind === "warming") warming.setProbeAt(lngLat);
@@ -89,6 +94,7 @@ export default function App() {
           />
           {view?.kind === "climate" && <TimeBar c={climate} />}
           {view?.kind === "warming" && <WarmingBar w={warming} />}
+          {view?.kind === "boundary" && <BoundaryBar b={boundary} />}
         </main>
       </div>
     </div>

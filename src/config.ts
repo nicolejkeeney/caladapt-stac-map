@@ -510,8 +510,47 @@ export const SCENARIO_NAMES: Record<string, string> = {
   ...Object.fromEntries(SCENARIOS.map((s) => [s.id, `${s.title} (${s.ssp})`])),
 };
 
+// ---------- Boundary summaries (WRF tool CSVs colored by region) ----------
+
+export const COUNTY_GEOMETRIES_URL = "https://cadcat.s3.amazonaws.com/geometries/ca-counties-geometries.geojson";
+
+export interface BoundaryMetric {
+  id: string; // the items' variable_id
+  title: string;
+  blurb: string;
+  unit: Unit;
+  colormap: string;
+  defaultThreshold: string; // matches the website's extreme heat tool
+}
+
+// One CSV per region and threshold, with multi-model median, p10 and p90 at each
+// warming level. Counties only for now: other boundaries have no GeoJSON yet.
+export const BOUNDARY_TOOLS: Record<string, { metrics: BoundaryMetric[]; boundary: string }> = {
+  "eh-metrics-mm-boundary-csv": {
+    boundary: "ca_counties",
+    metrics: [
+      {
+        id: "eh_days",
+        title: "Extreme heat days",
+        blurb: "Days per year when the high temperature reaches the threshold or hotter.",
+        unit: { label: "days", convert: (v) => v, digits: 0 },
+        colormap: "cal-adapt-extreme-heat",
+        defaultThreshold: "t2max_ge95F",
+      },
+      {
+        id: "warm_nights",
+        title: "Warm nights",
+        blurb: "Nights per year when the low temperature stays at the threshold or warmer.",
+        unit: { label: "nights", convert: (v) => v, digits: 0 },
+        colormap: "cal-adapt-warm-nights",
+        defaultThreshold: "t2min_ge70F",
+      },
+    ],
+  },
+};
+
 // Datasets whose page has an interactive map. Listed first on the Browse page.
-export type DatasetView = { kind: "climate" | "warming" | "places"; placeDataset?: string };
+export type DatasetView = { kind: "climate" | "warming" | "places" | "boundary"; placeDataset?: string };
 
 export const DATASET_VIEWS: Record<string, DatasetView> = {
   loca2: { kind: "climate" },
@@ -527,4 +566,5 @@ export const DATASET_VIEWS: Record<string, DatasetView> = {
   "xmy-persist": { kind: "places", placeDataset: "xmy-persist" },
   "xmy-shock": { kind: "places", placeDataset: "xmy-shock" },
   "sea-level-projections": { kind: "places", placeDataset: "sea-level" },
+  "eh-metrics-mm-boundary-csv": { kind: "boundary" },
 };
