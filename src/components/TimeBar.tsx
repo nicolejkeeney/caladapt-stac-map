@@ -123,11 +123,7 @@ export default function TimeBar({ c }: { c: ClimateState }) {
         </div>
       </div>
 
-      {c.charted ? (
-        <p className="note timebar-chart-note">Charted in the panel for the spot you click.</p>
-      ) : (
-        <Legend title={c.layer.title} colormap={c.layer.colormap} rescale={c.rescale} bins={c.layer.bins} unit={c.unit} />
-      )}
+      <Legend title={c.layer.title} colormap={c.layer.colormap} rescale={c.rescale} bins={c.layer.bins} unit={c.layer.unit} />
     </div>
   );
 }

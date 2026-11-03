@@ -2,11 +2,10 @@ import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER, STEPS
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
-import SeriesChart from "./SeriesChart";
 import Term from "./Term";
 
 export function formatValue(c: ClimateState, raw: number) {
-  const { convert, digits, label } = c.unit;
+  const { convert, digits, label } = c.layer.unit;
   return `${convert(raw).toFixed(digits)} ${label}`;
 }
 
@@ -70,19 +69,31 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
         <label className="field-label" htmlFor="time-step">
           Time step
         </label>
-        <select id="time-step" value={c.timeStep} onChange={(e) => c.setTimeStep(e.target.value as typeof c.timeStep)} disabled={c.timeSteps.length < 2}>
+        <select
+          id="time-step"
+          value={c.timeStep}
+          onChange={(e) => c.setTimeStep(e.target.value as typeof c.timeStep)}
+          disabled={c.timeSteps.length + c.unmappedSteps.length < 2}
+        >
           {c.timeSteps.map((s) => (
             <option key={s} value={s}>
               {STEPS[s].label}
-              {c.dataset.chartSteps?.includes(s) ? " (chart at a spot)" : ""}
+            </option>
+          ))}
+          {c.unmappedSteps.map((s) => (
+            <option key={s} value={s} disabled>
+              {STEPS[s].label} (can't be mapped)
             </option>
           ))}
         </select>
         <p className="note">{STEPS[c.timeStep].note}</p>
-        {c.charted && <p className="note">This data is too large to draw as a map, so click a spot to chart it instead.</p>}
+        {c.unmappedSteps.length > 0 && (
+          <p className="note">
+            {c.unmappedSteps.map((s) => STEPS[s].label).join(" and ")} data is available for download, but it's too large to show on the
+            map.
+          </p>
+        )}
       </div>
-
-      {c.charted && <SeriesChart c={c} />}
 
       <fieldset className="group">
         <legend>

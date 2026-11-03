@@ -575,50 +575,6 @@ input:not([type]) {
   }
 }
 
-/* ---------- Daily chart for a clicked spot ---------- */
-
-.series {
-  margin: 18px 0 0;
-}
-
-.series figcaption {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--pacific-deep);
-}
-
-.series svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin-top: 6px;
-}
-
-.series-line {
-  fill: none;
-  stroke: var(--pacific);
-  stroke-width: 1.5;
-}
-
-.series-marker {
-  stroke: var(--deep-orange);
-  stroke-width: 1;
-}
-
-.series-dot {
-  fill: var(--deep-orange);
-}
-
-.series-axis {
-  font-size: 10px;
-  fill: var(--muted);
-}
-
-.timebar-chart-note {
-  max-width: 180px;
-}
-
 .levels {
   display: flex;
   gap: 6px;
