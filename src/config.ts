@@ -175,6 +175,9 @@ export interface GriddedDataset {
   // tile would read gigabytes and time out; those steps are left out.
   steps: Frequency[];
   dayTime?: string; // time of day the daily values are stamped with, when not midnight
+  // Smaller tiles for stores whose chunks are deep in time: more requests run in
+  // parallel, each reading fewer chunks (128 drew the wind map in ~7 s vs ~14 s at 256)
+  tileSize?: number;
   about: string;
   aboutTerm?: { slug: keyof typeof import("./data/glossary.json"); label: string }; // a phrase in `about` linked to the glossary
 }
@@ -211,6 +214,7 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
       },
     ],
     steps: ["day"],
+    tileSize: 128,
     about: "Utility-scale solar output simulated from WRF climate projections. Map tiles load slowly.",
   },
   "wind-generation": {
@@ -228,6 +232,7 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
       },
     ],
     steps: ["day"],
+    tileSize: 128,
     about: "Onshore wind output simulated from WRF climate projections. Map tiles load slowly.",
   },
 };

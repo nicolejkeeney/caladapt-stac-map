@@ -28,6 +28,7 @@ export interface Readout {
 
 interface Props {
   raster: string | null;
+  rasterTileSize?: number; // smaller makes the map ask for more, smaller tiles
   places: PlacesLayer | null;
   footprint: GeoJSON.FeatureCollection | null;
   selectedPlaceId: string | null;
@@ -40,7 +41,7 @@ interface Props {
 const FOOTPRINT_LAYERS = ["footprint-fill", "footprint-line", "footprint-circle"];
 const PLACE_LAYERS = ["places-fill", "places-line", "places-hover", "places-circle", "places-selected"];
 
-export default function MapView({ raster, places, footprint, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
+export default function MapView({ raster, rasterTileSize = 256, places, footprint, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
@@ -93,19 +94,19 @@ export default function MapView({ raster, places, footprint, selectedPlaceId, re
     const map = mapRef.current;
     if (!map || !ready) return;
     const source = map.getSource("climate") as RasterTileSource | undefined;
-    if (!raster) {
+    // A different tile size needs a new source
+    if (!raster || (source && source.tileSize !== rasterTileSize)) {
       if (map.getLayer("climate")) map.removeLayer("climate");
       if (source) map.removeSource("climate");
-      return;
-    }
-    if (source) {
+      if (!raster) return;
+    } else if (source) {
       source.setTiles([raster]);
       return;
     }
-    map.addSource("climate", { type: "raster", tiles: [raster], tileSize: 256, bounds: [-128.5, 29.5, -111, 45.1] });
+    map.addSource("climate", { type: "raster", tiles: [raster], tileSize: rasterTileSize, bounds: [-128.5, 29.5, -111, 45.1] });
     const firstLabel = map.getStyle().layers.find((l) => l.type === "symbol")?.id;
     map.addLayer({ id: "climate", type: "raster", source: "climate", paint: { "raster-opacity": 0.85, "raster-fade-duration": 0 } }, firstLabel);
-  }, [raster, ready]);
+  }, [raster, rasterTileSize, ready]);
 
   // Counties or stations
   useEffect(() => {

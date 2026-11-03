@@ -75,6 +75,7 @@ export default function App() {
         <main className="stage">
           <MapView
             raster={climate.raster ?? warming.raster}
+            rasterTileSize={climate.raster ? climate.dataset.tileSize : undefined}
             places={places.layer}
             footprint={view ? null : catalog.footprint}
             selectedPlaceId={places.place?.id ?? null}
