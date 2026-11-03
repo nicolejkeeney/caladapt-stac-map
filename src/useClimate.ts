@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FIRST_FUTURE_YEAR, Frequency, GRIDDED_DATASETS, SCENARIOS } from "./config";
 import { buildColorTable } from "./colormap";
-import { eq, pointValue, searchAll, StacItem, tileUrl } from "./stac";
+import { eq, pointSeries, pointValue, searchAll, StacItem, tileUrl } from "./stac";
 
 const cache = new Map<string, Promise<StacItem[]>>();
 
@@ -27,6 +27,12 @@ function pickItem(items: StacItem[], model: string, experiment: string): StacIte
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
+
+export interface Series {
+  status: "loading" | "done" | "error";
+  times: string[];
+  values: (number | null)[];
+}
 
 export interface Probe {
   lngLat: [number, number];
@@ -71,11 +77,13 @@ export function useClimate(active: boolean, collection = "loca2") {
     };
   }, [collection, layer.variable]);
 
-  // Time steps this variable has in the catalog, limited to the ones the tiler can draw
+  // Time steps this variable has in the catalog: the ones the tiler can draw, then
+  // the ones that can only be charted at a spot
   const timeSteps = useMemo(() => {
     const have = new Set((allItems ?? []).map((i) => prop(i, "table_id")));
-    return dataset.steps.filter((s) => have.has(s));
+    return [...dataset.steps, ...(dataset.chartSteps ?? [])].filter((s) => have.has(s));
   }, [allItems, dataset]);
+  const charted = !!dataset.chartSteps?.includes(timeStep);
 
   useEffect(() => {
     if (timeSteps.length && !timeSteps.includes(timeStep)) setTimeStep(timeSteps.includes("mon") ? "mon" : timeSteps[0]);
@@ -159,9 +167,11 @@ export function useClimate(active: boolean, collection = "loca2") {
     "1hr": `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:00:00`,
   }[timeStep];
   const rescale = layer.rescaleByStep?.[timeStep] ?? layer.rescale;
+  const unit = layer.unitByStep?.[timeStep] ?? layer.unit;
 
   // Tiles take about a second each, so wait until the time settles
-  const liveUrl = item
+  const liveUrl =
+    item && !charted
     ? tileUrl({ href: item.assets.data.href, variable: layer.variable, datetime, colorTable: buildColorTable(layer.colormap, rescale, layer.bins) })
     : null;
   const [raster, setRaster] = useState<string | null>(null);
@@ -191,6 +201,19 @@ export function useClimate(active: boolean, collection = "loca2") {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [probeAt?.[0], probeAt?.[1], item?.id, datetime, active]);
 
+  // The clicked spot's whole record, for steps that are charted instead of mapped
+  const [series, setSeries] = useState<Series | null>(null);
+  useEffect(() => {
+    if (!charted || !probeAt || !item || !active) return setSeries(null);
+    const ctrl = new AbortController();
+    setSeries({ status: "loading", times: [], values: [] });
+    pointSeries({ href: item.assets.data.href, variable: layer.variable, lng: probeAt[0], lat: probeAt[1], signal: ctrl.signal })
+      .then(({ times, values }) => setSeries({ status: "done", times, values }))
+      .catch((e) => e.name !== "AbortError" && setSeries({ status: "error", times: [], values: [] }));
+    return () => ctrl.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [charted, probeAt?.[0], probeAt?.[1], item?.id, active]);
+
   return {
     collection,
     dataset,
@@ -199,7 +222,10 @@ export function useClimate(active: boolean, collection = "loca2") {
     timeStep,
     setTimeStep,
     timeSteps,
+    charted,
+    series,
     rescale,
+    unit,
     scenario,
     setScenario,
     scenarios,

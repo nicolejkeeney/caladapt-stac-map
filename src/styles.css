@@ -531,6 +531,94 @@ input:not([type]) {
   background: var(--white);
 }
 
+/* Three dots that pulse in turn while a clicked value loads */
+.popup-loading {
+  display: flex;
+  gap: 6px;
+  height: 37px;
+  align-items: center;
+}
+
+.popup-loading span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--pacific);
+  animation: popup-dot 1s ease-in-out infinite;
+}
+
+.popup-loading span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.popup-loading span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes popup-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup-loading span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ---------- Daily chart for a clicked spot ---------- */
+
+.series {
+  margin: 18px 0 0;
+}
+
+.series figcaption {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--pacific-deep);
+}
+
+.series svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 6px;
+}
+
+.series-line {
+  fill: none;
+  stroke: var(--pacific);
+  stroke-width: 1.5;
+}
+
+.series-marker {
+  stroke: var(--deep-orange);
+  stroke-width: 1;
+}
+
+.series-dot {
+  fill: var(--deep-orange);
+}
+
+.series-axis {
+  font-size: 10px;
+  fill: var(--muted);
+}
+
+.timebar-chart-note {
+  max-width: 180px;
+}
+
 .levels {
   display: flex;
   gap: 6px;

@@ -34,6 +34,7 @@ export interface ClimateLayer {
   variable: string;
   rescale: [number, number]; // in the file's native units
   rescaleByStep?: Partial<Record<Frequency, [number, number]>>; // where a step needs a different range
+  unitByStep?: Partial<Record<Frequency, Unit>>; // where a step stores different units
   colormap: string; // a name from colormap.ts; drives both tiles and legend
   bins?: number;
   unit: Unit;
@@ -135,6 +136,7 @@ const WRF_LAYERS: ClimateLayer[] = [
     colormap: "Blues",
     defaultMonth: 0, // summers in California are dry, so start in January
     unit: { label: "in/month", convert: (mm) => mm / 25.4, digits: 1 },
+    unitByStep: { day: { label: "in/day", convert: (mm) => mm / 25.4, digits: 2 } }, // daily values are mm per day
   },
   {
     id: "sunlight",
@@ -174,6 +176,9 @@ export interface GriddedDataset {
   // stores are chunked for time series (about 14,500 steps per chunk), so a map
   // tile would read gigabytes and time out; those steps are left out.
   steps: Frequency[];
+  // Steps that can't be mapped but can be charted at a clicked spot, since one
+  // spot's whole record is a fast read in those stores
+  chartSteps?: Frequency[];
   dayTime?: string; // time of day the daily values are stamped with, when not midnight
   about: string;
   aboutTerm?: { slug: keyof typeof import("./data/glossary.json"); label: string }; // a phrase in `about` linked to the glossary
@@ -193,6 +198,7 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
     filters: { "cmip6:grid_label": "d03", bias_adjusted: true },
     layers: WRF_LAYERS,
     steps: ["mon"],
+    chartSteps: ["day"],
     about: "WRF: climate models dynamically downscaled to a 3 km grid by UCLA.",
     aboutTerm: { slug: "dynamical-downscaling", label: "dynamically downscaled" },
   },

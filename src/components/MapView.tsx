@@ -21,6 +21,7 @@ export interface Readout {
   lngLat: [number, number];
   title: string;
   value: string;
+  loading?: boolean; // shows animated dots in place of the value
   detail?: string;
   sub: string;
 }
@@ -225,7 +226,15 @@ export default function MapView({ raster, places, footprint, selectedPlaceId, re
       el.appendChild(n);
     };
     add("p", "popup-title", readout.title);
-    add("p", "popup-value", readout.value);
+    if (readout.loading) {
+      const dots = document.createElement("p");
+      dots.className = "popup-value popup-loading";
+      dots.setAttribute("aria-label", "Loading");
+      for (let i = 0; i < 3; i++) dots.appendChild(document.createElement("span"));
+      el.appendChild(dots);
+    } else {
+      add("p", "popup-value", readout.value);
+    }
     if (readout.detail) add("p", "popup-detail", readout.detail);
     add("p", "popup-sub", readout.sub);
     popupRef.current.setDOMContent(el);

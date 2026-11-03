@@ -2,10 +2,11 @@ import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER, STEPS
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
+import SeriesChart from "./SeriesChart";
 import Term from "./Term";
 
 export function formatValue(c: ClimateState, raw: number) {
-  const { convert, digits, label } = c.layer.unit;
+  const { convert, digits, label } = c.unit;
   return `${convert(raw).toFixed(digits)} ${label}`;
 }
 
@@ -26,8 +27,10 @@ export function readoutFor(c: ClimateState) {
   const { status, value } = c.probe;
   return {
     lngLat: c.probe.lngLat,
-    title: `${c.layer.title} (${STEPS[c.timeStep].label.toLowerCase()}), ${when}`,
-    value: status === "loading" ? "…" : status === "error" ? "No reading" : value === null ? "No data here" : formatValue(c, value),
+    // The date shows the step, except for the yearly maximum
+    title: `${c.layer.title}${c.timeStep === "yrmax" ? " (yearly maximum)" : ""}, ${when}`,
+    value: status === "error" ? "No reading" : value === null ? "No data here" : formatValue(c, value),
+    loading: status === "loading",
     sub: `${formatCoords(c.probe.lngLat)}, ${modelName(c.model)} model`,
   };
 }
@@ -71,11 +74,15 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
           {c.timeSteps.map((s) => (
             <option key={s} value={s}>
               {STEPS[s].label}
+              {c.dataset.chartSteps?.includes(s) ? " (chart at a spot)" : ""}
             </option>
           ))}
         </select>
         <p className="note">{STEPS[c.timeStep].note}</p>
+        {c.charted && <p className="note">This data is too large to draw as a map, so click a spot to chart it instead.</p>}
       </div>
+
+      {c.charted && <SeriesChart c={c} />}
 
       <fieldset className="group">
         <legend>

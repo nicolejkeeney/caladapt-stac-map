@@ -21,7 +21,8 @@ export function warmingReadout(w: WarmingState) {
   return {
     lngLat: w.probe.lngLat,
     title: `${w.layer.title}${w.kind === "del" ? ", change" : ""} in a ${levelLabel(w.level)} world`,
-    value: status === "loading" ? "…" : status === "error" ? "No reading" : value === null ? "No data here" : fmt(w, value),
+    value: status === "error" ? "No reading" : value === null ? "No data here" : fmt(w, value),
+    loading: status === "loading",
     detail: status === "done" && low !== null && high !== null ? `Range across 4 models: ${fmt(w, low)} to ${fmt(w, high)}` : undefined,
     sub: formatCoords(w.probe.lngLat),
   };

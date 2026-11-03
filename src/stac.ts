@@ -109,6 +109,15 @@ export async function dimension(href: string, variable: string): Promise<{ name:
   return { name, values: dim.data };
 }
 
+/** Every value at one spot, with its times. Fast for stores chunked for time series (WRF daily). */
+export async function pointSeries(opts: { href: string; variable: string; lng: number; lat: number; signal?: AbortSignal }) {
+  const qs = tilerParams({ url: opts.href, variable: opts.variable });
+  const res: any = await getJson(`${TILER}/point/${opts.lng},${opts.lat}?${qs}`, { signal: opts.signal });
+  const values: (number | null)[] = Array.isArray(res?.data) ? res.data : [];
+  const times: string[] = Array.isArray(res?.coords?.time?.data) ? res.coords.time.data : [];
+  return { times, values };
+}
+
 export async function pointValue(opts: {
   href: string;
   variable: string;
