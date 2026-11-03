@@ -4,15 +4,14 @@ import type { ClimateState } from "../useClimate";
 import Legend from "./Legend";
 
 const PLAY_STEP_MS = 1500;
-const STEP_NAME = { yrmax: "year", mon: "month", "1hr": "hour" } as const;
+const STEP_NAME = { yrmax: "year", mon: "month", day: "day", "1hr": "hour" } as const;
 const pad = (n: number) => String(n).padStart(2, "0");
 
-/** The time on the map, picked at the precision of the layer: a year, a month or an hour. */
+/** The time on the map, picked at the precision of the time step: a year, month, day or hour. */
 export default function TimeBar({ c }: { c: ClimateState }) {
   const [playing, setPlaying] = useState(false);
-  const { year, month, day, hour, minYear, maxYear, step, atStart, atEnd, setTime } = c;
-  const frequency = c.layer.frequency;
-  const unit = STEP_NAME[frequency];
+  const { year, month, day, hour, minYear, maxYear, moveBy, atStart, atEnd, setTime, timeStep } = c;
+  const unit = STEP_NAME[timeStep];
 
   useEffect(() => {
     if (!playing) return;
@@ -20,13 +19,13 @@ export default function TimeBar({ c }: { c: ClimateState }) {
       setPlaying(false);
       return;
     }
-    const t = setTimeout(() => step(1), PLAY_STEP_MS);
+    const t = setTimeout(() => moveBy(1), PLAY_STEP_MS);
     return () => clearTimeout(t);
-  }, [playing, atEnd, step]);
+  }, [playing, atEnd, moveBy]);
 
   const stepBy = (n: number) => {
     setPlaying(false);
-    step(n);
+    moveBy(n);
   };
   const pick = (t: number) => {
     setPlaying(false);
@@ -34,7 +33,7 @@ export default function TimeBar({ c }: { c: ClimateState }) {
   };
 
   const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i);
-  const when = frequency === "yrmax" ? "" : frequency === "mon" ? MONTHS[month] : `${MONTHS[month]} ${day}, ${pad(hour)}:00 UTC`;
+  const when = { yrmax: "", mon: MONTHS[month], day: `${MONTHS[month]} ${day}`, "1hr": `${MONTHS[month]} ${day}, ${pad(hour)}:00 UTC` }[timeStep];
 
   return (
     <div className="timebar">
@@ -77,7 +76,7 @@ export default function TimeBar({ c }: { c: ClimateState }) {
           </button>
 
           <div className="time-pickers">
-            {frequency === "1hr" ? (
+            {timeStep === "1hr" || timeStep === "day" ? (
               <>
                 <input
                   type="date"
@@ -90,17 +89,19 @@ export default function TimeBar({ c }: { c: ClimateState }) {
                     if (y) pick(Date.UTC(y, m - 1, d, hour));
                   }}
                 />
-                <select aria-label="Hour (UTC)" value={hour} onChange={(e) => pick(Date.UTC(year, month, day, Number(e.target.value)))}>
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>
-                      {pad(h)}:00 UTC
-                    </option>
-                  ))}
-                </select>
+                {timeStep === "1hr" && (
+                  <select aria-label="Hour (UTC)" value={hour} onChange={(e) => pick(Date.UTC(year, month, day, Number(e.target.value)))}>
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {pad(h)}:00 UTC
+                      </option>
+                    ))}
+                  </select>
+                )}
               </>
             ) : (
               <>
-                {frequency === "mon" && (
+                {timeStep === "mon" && (
                   <select aria-label="Month" value={month} onChange={(e) => pick(Date.UTC(year, Number(e.target.value), 1))}>
                     {MONTHS.map((m, i) => (
                       <option key={m} value={i}>
@@ -122,7 +123,7 @@ export default function TimeBar({ c }: { c: ClimateState }) {
         </div>
       </div>
 
-      <Legend title={c.layer.title} colormap={c.layer.colormap} rescale={c.layer.rescale} bins={c.layer.bins} unit={c.layer.unit} />
+      <Legend title={c.layer.title} colormap={c.layer.colormap} rescale={c.rescale} bins={c.layer.bins} unit={c.layer.unit} />
     </div>
   );
 }

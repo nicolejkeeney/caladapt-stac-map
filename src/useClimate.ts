@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FIRST_FUTURE_YEAR, GRIDDED_DATASETS, SCENARIOS } from "./config";
+import { FIRST_FUTURE_YEAR, Frequency, GRIDDED_DATASETS, SCENARIOS } from "./config";
 import { buildColorTable } from "./colormap";
 import { eq, pointValue, searchAll, StacItem, tileUrl } from "./stac";
 
 const cache = new Map<string, Promise<StacItem[]>>();
 
-function loadItems(collection: string, filters: Record<string, string | boolean>, variable: string, frequency: string): Promise<StacItem[]> {
-  const key = `${collection}/${variable}/${frequency}`;
+/** Every item for one variable, across all its time steps. */
+function loadItems(collection: string, filters: Record<string, string | boolean>, variable: string): Promise<StacItem[]> {
+  const key = `${collection}/${variable}`;
   if (!cache.has(key)) {
     const where = Object.entries(filters).map(([k, v]) => eq(k, v));
-    const p = searchAll(collection, [eq("variable_id", variable), eq("cmip6:table_id", frequency), ...where]);
+    const p = searchAll(collection, [eq("variable_id", variable), ...where]);
     p.catch(() => cache.delete(key));
     cache.set(key, p);
   }
@@ -36,11 +37,12 @@ export interface Probe {
 export function useClimate(active: boolean, collection = "loca2") {
   const dataset = GRIDDED_DATASETS[collection] ?? GRIDDED_DATASETS.loca2;
   const [layerId, setLayerId] = useState(dataset.layers[0].id);
+  const [timeStep, setTimeStep] = useState<Frequency>("mon");
   const [scenario, setScenario] = useState(SCENARIOS[1].id);
   const [model, setModel] = useState("");
-  // The time on the map, as a UTC timestamp; how precise it is depends on the layer
+  // The time on the map, as a UTC timestamp; how precise it is depends on the time step
   const [time, setTimeRaw] = useState(() => Date.UTC(2050, 6, 1));
-  const [items, setItems] = useState<StacItem[] | null>(null);
+  const [allItems, setAllItems] = useState<StacItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [probe, setProbe] = useState<Probe | null>(null);
 
@@ -59,15 +61,27 @@ export function useClimate(active: boolean, collection = "loca2") {
 
   useEffect(() => {
     let stale = false;
-    setItems(null);
+    setAllItems(null);
     setError(null);
-    loadItems(collection, dataset.filters, layer.variable, layer.frequency)
-      .then((res) => !stale && setItems(res))
+    loadItems(collection, dataset.filters, layer.variable)
+      .then((res) => !stale && setAllItems(res))
       .catch(() => !stale && setError("The data catalog didn't respond. Check your connection and pick the layer again."));
     return () => {
       stale = true;
     };
-  }, [collection, layer.variable, layer.frequency]);
+  }, [collection, layer.variable]);
+
+  // Time steps this variable has in the catalog, limited to the ones the tiler can draw
+  const timeSteps = useMemo(() => {
+    const have = new Set((allItems ?? []).map((i) => prop(i, "table_id")));
+    return dataset.steps.filter((s) => have.has(s));
+  }, [allItems, dataset]);
+
+  useEffect(() => {
+    if (timeSteps.length && !timeSteps.includes(timeStep)) setTimeStep(timeSteps.includes("mon") ? "mon" : timeSteps[0]);
+  }, [timeSteps, timeStep]);
+
+  const items = useMemo(() => allItems?.filter((i) => prop(i, "table_id") === timeStep) ?? null, [allItems, timeStep]);
 
   // Future scenarios this dataset has runs for
   const scenarios = useMemo(() => {
@@ -109,38 +123,46 @@ export function useClimate(active: boolean, collection = "loca2") {
   const day = d.getUTCDate();
   const hour = d.getUTCHours();
 
-  const atStart =
-    layer.frequency === "yrmax" ? year <= minYear : layer.frequency === "mon" ? year <= minYear && month === 0 : time <= Date.UTC(minYear, 0, 1);
-  const atEnd =
-    layer.frequency === "yrmax"
-      ? year >= maxYear
-      : layer.frequency === "mon"
-        ? year >= maxYear && month === 11
-        : time >= Date.UTC(maxYear, 11, 31, 23);
+  const atStart = {
+    yrmax: year <= minYear,
+    mon: year <= minYear && month === 0,
+    day: time < Date.UTC(minYear, 0, 2),
+    "1hr": time <= Date.UTC(minYear, 0, 1),
+  }[timeStep];
+  const atEnd = {
+    yrmax: year >= maxYear,
+    mon: year >= maxYear && month === 11,
+    day: time >= Date.UTC(maxYear, 11, 31),
+    "1hr": time >= Date.UTC(maxYear, 11, 31, 23),
+  }[timeStep];
 
-  /** Move by n of the layer's time steps: years, months or hours. */
-  const step = (n: number) =>
+  /** Move by n time steps: years, months, days or hours. */
+  const moveBy = (n: number) =>
     setTimeRaw((t) => {
       const at = new Date(t);
-      const y = at.getUTCFullYear();
-      const m = at.getUTCMonth();
-      return clamp(
-        layer.frequency === "yrmax" ? Date.UTC(y + n, m, 1) : layer.frequency === "mon" ? Date.UTC(y, m + n, 1) : t + n * 3600_000,
-      );
+      const [y, m, dd] = [at.getUTCFullYear(), at.getUTCMonth(), at.getUTCDate()];
+      const next = {
+        yrmax: Date.UTC(y + n, m, 1),
+        mon: Date.UTC(y, m + n, 1),
+        day: Date.UTC(y, m, dd + n),
+        "1hr": t + n * 3600_000,
+      }[timeStep];
+      return clamp(next);
     });
 
   const experiment = year < FIRST_FUTURE_YEAR ? "historical" : scenario;
   const item = items && model ? pickItem(items, model, experiment) : undefined;
-  const datetime =
-    layer.frequency === "yrmax"
-      ? `${year}-01-01`
-      : layer.frequency === "mon"
-        ? `${year}-${pad(month + 1)}-01`
-        : `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:00:00`;
+  const datetime = {
+    yrmax: `${year}-01-01`,
+    mon: `${year}-${pad(month + 1)}-01`,
+    day: `${year}-${pad(month + 1)}-${pad(day)}${dataset.dayTime ?? ""}`,
+    "1hr": `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:00:00`,
+  }[timeStep];
+  const rescale = layer.rescaleByStep?.[timeStep] ?? layer.rescale;
 
-  // Tiles take about a second each, so wait until the slider settles
+  // Tiles take about a second each, so wait until the time settles
   const liveUrl = item
-    ? tileUrl({ href: item.assets.data.href, variable: layer.variable, datetime, colorTable: buildColorTable(layer.colormap, layer.rescale, layer.bins) })
+    ? tileUrl({ href: item.assets.data.href, variable: layer.variable, datetime, colorTable: buildColorTable(layer.colormap, rescale, layer.bins) })
     : null;
   const [raster, setRaster] = useState<string | null>(null);
   useEffect(() => {
@@ -174,6 +196,10 @@ export function useClimate(active: boolean, collection = "loca2") {
     dataset,
     layer,
     setLayerId: chooseLayer,
+    timeStep,
+    setTimeStep,
+    timeSteps,
+    rescale,
     scenario,
     setScenario,
     scenarios,
@@ -182,7 +208,7 @@ export function useClimate(active: boolean, collection = "loca2") {
     models,
     time,
     setTime,
-    step,
+    moveBy,
     atStart,
     atEnd,
     year,
@@ -194,7 +220,7 @@ export function useClimate(active: boolean, collection = "loca2") {
     experiment,
     loading: !items && !error,
     error,
-    missing: !!items && !item,
+    missing: !!items && !!items.length && !item,
     item,
     datetime,
     raster: active ? raster : null,

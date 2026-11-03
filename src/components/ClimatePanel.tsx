@@ -1,4 +1,4 @@
-import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER } from "../config";
+import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER, STEPS } from "../config";
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
@@ -17,16 +17,16 @@ export const modelName = (id: string) => MODEL_NAMES[id] ?? id.toUpperCase();
 
 export function readoutFor(c: ClimateState) {
   if (!c.probe) return null;
-  const when =
-    c.layer.frequency === "yrmax"
-      ? `${c.year}`
-      : c.layer.frequency === "mon"
-        ? `${MONTHS[c.month]} ${c.year}`
-        : `${MONTHS[c.month]} ${c.day}, ${c.year}, ${String(c.hour).padStart(2, "0")}:00 UTC`;
+  const when = {
+    yrmax: `${c.year}`,
+    mon: `${MONTHS[c.month]} ${c.year}`,
+    day: `${MONTHS[c.month]} ${c.day}, ${c.year}`,
+    "1hr": `${MONTHS[c.month]} ${c.day}, ${c.year}, ${String(c.hour).padStart(2, "0")}:00 UTC`,
+  }[c.timeStep];
   const { status, value } = c.probe;
   return {
     lngLat: c.probe.lngLat,
-    title: `${c.layer.title}, ${when}`,
+    title: `${c.layer.title} (${STEPS[c.timeStep].label.toLowerCase()}), ${when}`,
     value: status === "loading" ? "…" : status === "error" ? "No reading" : value === null ? "No data here" : formatValue(c, value),
     sub: `${formatCoords(c.probe.lngLat)}, ${modelName(c.model)} model`,
   };
@@ -62,6 +62,20 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
           </label>
         ))}
       </fieldset>
+
+      <div className="group">
+        <label className="field-label" htmlFor="time-step">
+          Time step
+        </label>
+        <select id="time-step" value={c.timeStep} onChange={(e) => c.setTimeStep(e.target.value as typeof c.timeStep)} disabled={c.timeSteps.length < 2}>
+          {c.timeSteps.map((s) => (
+            <option key={s} value={s}>
+              {STEPS[s].label}
+            </option>
+          ))}
+        </select>
+        <p className="note">{STEPS[c.timeStep].note}</p>
+      </div>
 
       <fieldset className="group">
         <legend>
@@ -114,7 +128,7 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
 
       {c.item && c.collection === "loca2" && (
         <GetData
-          {...loca2Methods(c.item, c.layer.variable, c.layer.frequency === "yrmax" ? `${c.year}` : c.datetime.slice(0, 7))}
+          {...loca2Methods(c.item, c.layer.variable, { yrmax: `${c.year}`, mon: c.datetime.slice(0, 7), day: c.datetime.slice(0, 10), "1hr": c.datetime }[c.timeStep])}
           catalogLink={`${STAC_BROWSER}/collections/${c.item.collection}/items/${c.item.id}`}
         />
       )}

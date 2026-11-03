@@ -10,7 +10,15 @@ export const CA_BOUNDS: [number, number, number, number] = [-124.6, 32.4, -114.0
 
 // ---------- Gridded climate layers (via the tiler) ----------
 
-export type Frequency = "yrmax" | "mon" | "1hr";
+export type Frequency = "1hr" | "day" | "mon" | "yrmax";
+
+// How each time step is named in the panel, and what it means
+export const STEPS: Record<Frequency, { label: string; note: string }> = {
+  "1hr": { label: "Hourly", note: "One simulated hour from a climate model, not a forecast." },
+  day: { label: "Daily", note: "One simulated day from a climate model, not a forecast." },
+  mon: { label: "Monthly", note: "Summarized over the month." },
+  yrmax: { label: "Yearly maximum", note: "The highest value reached that year." },
+};
 
 export interface Unit {
   label: string;
@@ -18,13 +26,14 @@ export interface Unit {
   digits: number;
 }
 
+/** One variable on the map; the time step is picked separately. */
 export interface ClimateLayer {
   id: string;
   title: string;
   blurb: string;
   variable: string;
-  frequency: Frequency;
   rescale: [number, number]; // in the file's native units
+  rescaleByStep?: Partial<Record<Frequency, [number, number]>>; // where a step needs a different range
   colormap: string; // a name from colormap.ts; drives both tiles and legend
   bins?: number;
   unit: Unit;
@@ -32,46 +41,36 @@ export interface ClimateLayer {
 }
 
 const kelvinToF: Unit = { label: "°F", convert: (k) => ((k - 273.15) * 9) / 5 + 32, digits: 0 };
-
+const percent: Unit = { label: "%", convert: (v) => v * 100, digits: 0 };
 
 const LOCA2_LAYERS: ClimateLayer[] = [
   {
-    id: "hottest-day",
-    title: "Hottest day of the year",
-    blurb: "The single highest daily temperature reached each year.",
-    variable: "tasmax",
-    frequency: "yrmax",
-    rescale: [285, 325],
-    colormap: "RdYlBu_r",
-    unit: kelvinToF,
-  },
-  {
     id: "daily-high",
-    title: "Average daily high",
-    blurb: "The typical afternoon high temperature for the month.",
+    title: "Daily high temperature",
+    blurb: "The day's highest temperature.",
     variable: "tasmax",
-    frequency: "mon",
     rescale: [265, 320],
+    rescaleByStep: { day: [255, 325], yrmax: [285, 325] },
     colormap: "RdYlBu_r",
     unit: kelvinToF,
   },
   {
     id: "daily-low",
-    title: "Average daily low",
-    blurb: "The typical overnight low temperature for the month.",
+    title: "Daily low temperature",
+    blurb: "The day's lowest temperature, usually overnight.",
     variable: "tasmin",
-    frequency: "mon",
     rescale: [255, 305],
+    rescaleByStep: { day: [245, 310] },
     colormap: "RdYlBu_r",
     unit: kelvinToF,
   },
   {
     id: "precip",
     title: "Precipitation",
-    blurb: "Average rain and snow per day during the month.",
+    blurb: "Rain and snow, as an average amount per day.",
     variable: "pr",
-    frequency: "mon",
     rescale: [0, 0.0002],
+    rescaleByStep: { day: [0, 0.0006] },
     colormap: "Blues",
     defaultMonth: 0, // summers in California are dry, so start in January
     // kg m-2 s-1 is mm/s; show inches per day
@@ -80,9 +79,8 @@ const LOCA2_LAYERS: ClimateLayer[] = [
   {
     id: "sunlight",
     title: "Sunlight",
-    blurb: "Solar energy reaching the ground, averaged over the month.",
+    blurb: "Solar energy reaching the ground.",
     variable: "rsds",
-    frequency: "mon",
     rescale: [50, 350],
     colormap: "YlOrRd",
     unit: { label: "W/m²", convert: (v) => v, digits: 0 },
@@ -90,9 +88,8 @@ const LOCA2_LAYERS: ClimateLayer[] = [
   {
     id: "humidity",
     title: "Humidity (daily maximum)",
-    blurb: "The most humid point of a typical day, usually early morning.",
+    blurb: "The most humid point of the day, usually early morning.",
     variable: "hursmax",
-    frequency: "mon",
     rescale: [20, 100],
     colormap: "GnBu",
     unit: { label: "%", convert: (v) => v, digits: 0 },
@@ -100,34 +97,31 @@ const LOCA2_LAYERS: ClimateLayer[] = [
   {
     id: "wind",
     title: "Wind speed",
-    blurb: "Average near-surface wind speed for the month.",
+    blurb: "Average near-surface wind speed.",
     variable: "wspeed",
-    frequency: "mon",
     rescale: [0, 8],
     colormap: "viridis",
     unit: { label: "mph", convert: (v) => v * 2.237, digits: 1 },
   },
 ];
 
-// WRF's monthly 3 km variables. Temperature, sunlight and wind use the same
-// units as LOCA2; precipitation is a monthly total in mm, not a rate.
+// WRF's variables. Temperature, sunlight and wind use the same units as LOCA2;
+// monthly precipitation is a total in mm, not a rate.
 const WRF_LAYERS: ClimateLayer[] = [
   {
     id: "daily-high",
-    title: "Average daily high",
-    blurb: "The typical afternoon high temperature for the month.",
+    title: "Daily high temperature",
+    blurb: "The day's highest temperature.",
     variable: "t2max",
-    frequency: "mon",
     rescale: [265, 320],
     colormap: "RdYlBu_r",
     unit: kelvinToF,
   },
   {
     id: "daily-low",
-    title: "Average daily low",
-    blurb: "The typical overnight low temperature for the month.",
+    title: "Daily low temperature",
+    blurb: "The day's lowest temperature, usually overnight.",
     variable: "t2min",
-    frequency: "mon",
     rescale: [255, 305],
     colormap: "RdYlBu_r",
     unit: kelvinToF,
@@ -135,9 +129,8 @@ const WRF_LAYERS: ClimateLayer[] = [
   {
     id: "precip",
     title: "Precipitation",
-    blurb: "Total rain and snow for the month.",
+    blurb: "Total rain and snow.",
     variable: "prec",
-    frequency: "mon",
     rescale: [0, 200],
     colormap: "Blues",
     defaultMonth: 0, // summers in California are dry, so start in January
@@ -146,9 +139,8 @@ const WRF_LAYERS: ClimateLayer[] = [
   {
     id: "sunlight",
     title: "Sunlight",
-    blurb: "Solar energy reaching the ground, averaged over the month.",
+    blurb: "Solar energy reaching the ground.",
     variable: "sw_dwn",
-    frequency: "mon",
     rescale: [50, 350],
     colormap: "YlOrRd",
     unit: { label: "W/m²", convert: (v) => v, digits: 0 },
@@ -156,9 +148,8 @@ const WRF_LAYERS: ClimateLayer[] = [
   {
     id: "humidity",
     title: "Humidity",
-    blurb: "Average relative humidity for the month.",
+    blurb: "Average relative humidity.",
     variable: "rh",
-    frequency: "mon",
     rescale: [10, 100],
     colormap: "GnBu",
     unit: { label: "%", convert: (v) => v, digits: 0 },
@@ -166,9 +157,8 @@ const WRF_LAYERS: ClimateLayer[] = [
   {
     id: "wind",
     title: "Wind speed",
-    blurb: "Average near-surface wind speed for the month.",
+    blurb: "Average near-surface wind speed.",
     variable: "wspd10mean",
-    frequency: "mon",
     rescale: [0, 8],
     colormap: "viridis",
     unit: { label: "mph", convert: (v) => v * 2.237, digits: 1 },
@@ -180,6 +170,11 @@ const WRF_LAYERS: ClimateLayer[] = [
 export interface GriddedDataset {
   filters: Record<string, string | boolean>;
   layers: ClimateLayer[];
+  // Time steps the tiler can draw, in the order offered. WRF's daily and hourly
+  // stores are chunked for time series (about 14,500 steps per chunk), so a map
+  // tile would read gigabytes and time out; those steps are left out.
+  steps: Frequency[];
+  dayTime?: string; // time of day the daily values are stamped with, when not midnight
   about: string;
   aboutTerm?: { slug: keyof typeof import("./data/glossary.json"); label: string }; // a phrase in `about` linked to the glossary
 }
@@ -188,6 +183,8 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
   loca2: {
     filters: {},
     layers: LOCA2_LAYERS,
+    steps: ["day", "mon", "yrmax"],
+    dayTime: "T12:00:00",
     about: "LOCA2: 15 climate models statistically downscaled to a 3 km grid by UC San Diego.",
     aboutTerm: { slug: "statistical-downscaling", label: "statistically downscaled" },
   },
@@ -195,8 +192,43 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
     // The 3 km California grid, bias-adjusted runs
     filters: { "cmip6:grid_label": "d03", bias_adjusted: true },
     layers: WRF_LAYERS,
+    steps: ["mon"],
     about: "WRF: climate models dynamically downscaled to a 3 km grid by UCLA.",
     aboutTerm: { slug: "dynamical-downscaling", label: "dynamically downscaled" },
+  },
+  "pv-generation": {
+    // Utility-scale solar on the 3 km grid
+    filters: { "cmip6:grid_label": "d03", installation: "pv_utility" },
+    layers: [
+      {
+        id: "capacity-factor",
+        title: "Solar capacity factor",
+        blurb: "The share of a solar farm's full capacity it produces.",
+        variable: "cf",
+        rescale: [0, 0.5],
+        colormap: "YlOrRd",
+        unit: percent,
+      },
+    ],
+    steps: ["day"],
+    about: "Utility-scale solar output simulated from WRF climate projections. Map tiles load slowly.",
+  },
+  "wind-generation": {
+    // Onshore wind on the 3 km grid
+    filters: { "cmip6:grid_label": "d03", installation: "windpower_onshore" },
+    layers: [
+      {
+        id: "capacity-factor",
+        title: "Wind capacity factor",
+        blurb: "The share of a wind turbine's full capacity it produces.",
+        variable: "cf",
+        rescale: [0, 0.7],
+        colormap: "viridis",
+        unit: percent,
+      },
+    ],
+    steps: ["day"],
+    about: "Onshore wind output simulated from WRF climate projections. Map tiles load slowly.",
   },
 };
 
@@ -466,6 +498,8 @@ export type DatasetView = { kind: "climate" | "warming" | "places"; placeDataset
 export const DATASET_VIEWS: Record<string, DatasetView> = {
   loca2: { kind: "climate" },
   "wrf-ucla": { kind: "climate" },
+  "pv-generation": { kind: "climate" },
+  "wind-generation": { kind: "climate" },
   "wrf-climate-metrics-map": { kind: "warming" },
   "loca2-county": { kind: "places", placeDataset: "counties" },
   hadisd: { kind: "places", placeDataset: "hadisd" },
