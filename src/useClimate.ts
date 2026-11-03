@@ -5,7 +5,7 @@ import { eq, pointValue, searchAll, StacItem, tileUrl } from "./stac";
 
 const cache = new Map<string, Promise<StacItem[]>>();
 
-function loadItems(collection: string, filters: Record<string, string>, variable: string, frequency: string): Promise<StacItem[]> {
+function loadItems(collection: string, filters: Record<string, string | boolean>, variable: string, frequency: string): Promise<StacItem[]> {
   const key = `${collection}/${variable}/${frequency}`;
   if (!cache.has(key)) {
     const where = Object.entries(filters).map(([k, v]) => eq(k, v));
@@ -69,6 +69,16 @@ export function useClimate(active: boolean, collection = "loca2") {
     };
   }, [collection, layer.variable, layer.frequency]);
 
+  // Future scenarios this dataset has runs for
+  const scenarios = useMemo(() => {
+    const ids = new Set((items ?? []).map((i) => prop(i, "experiment_id")));
+    return SCENARIOS.filter((s) => ids.has(s.id));
+  }, [items]);
+
+  useEffect(() => {
+    if (scenarios.length && !scenarios.some((s) => s.id === scenario)) setScenario(scenarios[0].id);
+  }, [scenarios, scenario]);
+
   // Models that have a run for the chosen scenario
   const models = useMemo(() => {
     if (!items) return [];
@@ -80,9 +90,12 @@ export function useClimate(active: boolean, collection = "loca2") {
     if (models.length && !models.includes(model)) setModel(models.includes("cesm2-lens") ? "cesm2-lens" : models[0]);
   }, [models, model]);
 
-  const hasHistorical = !!items && !!model && !!pickItem(items, model, "historical");
-  const minYear = hasHistorical ? 1950 : FIRST_FUTURE_YEAR;
-  const maxYear = 2100;
+  // Years covered by this model's runs: its historical run (if any) through its future run
+  const historicalRun = items && model ? pickItem(items, model, "historical") : undefined;
+  const futureRun = items && model ? pickItem(items, model, scenario) : undefined;
+  const yearOf = (iso: unknown) => Number(String(iso).slice(0, 4));
+  const minYear = yearOf((historicalRun ?? futureRun)?.properties.start_datetime) || FIRST_FUTURE_YEAR;
+  const maxYear = yearOf(futureRun?.properties.end_datetime) || 2100;
   const clamp = (t: number) => Math.min(Math.max(t, Date.UTC(minYear, 0, 1)), Date.UTC(maxYear, 11, 31, 23));
   const setTime = (t: number) => setTimeRaw(clamp(t));
   useEffect(() => {
@@ -163,6 +176,7 @@ export function useClimate(active: boolean, collection = "loca2") {
     setLayerId: chooseLayer,
     scenario,
     setScenario,
+    scenarios,
     model,
     setModel,
     models,

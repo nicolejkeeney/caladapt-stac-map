@@ -29,7 +29,7 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 type Cql2 = { op: string; args: unknown[] };
 
-export function eq(property: string, value: string): Cql2 {
+export function eq(property: string, value: string | boolean): Cql2 {
   return { op: "=", args: [{ property }, value] };
 }
 

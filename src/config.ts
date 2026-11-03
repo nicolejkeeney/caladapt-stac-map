@@ -109,10 +109,76 @@ const LOCA2_LAYERS: ClimateLayer[] = [
   },
 ];
 
+// WRF's monthly 3 km variables. Temperature, sunlight and wind use the same
+// units as LOCA2; precipitation is a monthly total in mm, not a rate.
+const WRF_LAYERS: ClimateLayer[] = [
+  {
+    id: "daily-high",
+    title: "Average daily high",
+    blurb: "The typical afternoon high temperature for the month.",
+    variable: "t2max",
+    frequency: "mon",
+    rescale: [265, 320],
+    colormap: "RdYlBu_r",
+    unit: kelvinToF,
+  },
+  {
+    id: "daily-low",
+    title: "Average daily low",
+    blurb: "The typical overnight low temperature for the month.",
+    variable: "t2min",
+    frequency: "mon",
+    rescale: [255, 305],
+    colormap: "RdYlBu_r",
+    unit: kelvinToF,
+  },
+  {
+    id: "precip",
+    title: "Precipitation",
+    blurb: "Total rain and snow for the month.",
+    variable: "prec",
+    frequency: "mon",
+    rescale: [0, 200],
+    colormap: "Blues",
+    defaultMonth: 0, // summers in California are dry, so start in January
+    unit: { label: "in/month", convert: (mm) => mm / 25.4, digits: 1 },
+  },
+  {
+    id: "sunlight",
+    title: "Sunlight",
+    blurb: "Solar energy reaching the ground, averaged over the month.",
+    variable: "sw_dwn",
+    frequency: "mon",
+    rescale: [50, 350],
+    colormap: "YlOrRd",
+    unit: { label: "W/m²", convert: (v) => v, digits: 0 },
+  },
+  {
+    id: "humidity",
+    title: "Humidity",
+    blurb: "Average relative humidity for the month.",
+    variable: "rh",
+    frequency: "mon",
+    rescale: [10, 100],
+    colormap: "GnBu",
+    unit: { label: "%", convert: (v) => v, digits: 0 },
+  },
+  {
+    id: "wind",
+    title: "Wind speed",
+    blurb: "Average near-surface wind speed for the month.",
+    variable: "wspd10mean",
+    frequency: "mon",
+    rescale: [0, 8],
+    colormap: "viridis",
+    unit: { label: "mph", convert: (v) => v * 2.237, digits: 1 },
+  },
+];
+
 // Gridded climate-model collections that share the map view: one entry per
 // STAC collection, with the item filters that pick its California grid.
 export interface GriddedDataset {
-  filters: Record<string, string>;
+  filters: Record<string, string | boolean>;
   layers: ClimateLayer[];
   about: string;
   aboutTerm?: { slug: keyof typeof import("./data/glossary.json"); label: string }; // a phrase in `about` linked to the glossary
@@ -124,6 +190,13 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
     layers: LOCA2_LAYERS,
     about: "LOCA2: 15 climate models statistically downscaled to a 3 km grid by UC San Diego.",
     aboutTerm: { slug: "statistical-downscaling", label: "statistically downscaled" },
+  },
+  "wrf-ucla": {
+    // The 3 km California grid, bias-adjusted runs
+    filters: { "cmip6:grid_label": "d03", bias_adjusted: true },
+    layers: WRF_LAYERS,
+    about: "WRF: climate models dynamically downscaled to a 3 km grid by UCLA.",
+    aboutTerm: { slug: "dynamical-downscaling", label: "dynamically downscaled" },
   },
 };
 
@@ -392,6 +465,7 @@ export type DatasetView = { kind: "climate" | "warming" | "places"; placeDataset
 
 export const DATASET_VIEWS: Record<string, DatasetView> = {
   loca2: { kind: "climate" },
+  "wrf-ucla": { kind: "climate" },
   "wrf-climate-metrics-map": { kind: "warming" },
   "loca2-county": { kind: "places", placeDataset: "counties" },
   hadisd: { kind: "places", placeDataset: "hadisd" },

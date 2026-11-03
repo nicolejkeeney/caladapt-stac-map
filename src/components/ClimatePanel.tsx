@@ -1,4 +1,4 @@
-import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, SCENARIOS, STAC_BROWSER } from "../config";
+import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER } from "../config";
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
@@ -67,7 +67,7 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
         <legend>
           Future <Term slug="shared-socioeconomic-pathways">emissions scenario</Term>
         </legend>
-        {SCENARIOS.map((s) => (
+        {c.scenarios.map((s) => (
           <label key={s.id} className="choice">
             <input type="radio" name="scenario" checked={c.scenario === s.id} onChange={() => c.setScenario(s.id)} />
             <span>
