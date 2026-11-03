@@ -27,9 +27,6 @@ export default function App() {
 
   const readout = view?.kind === "climate" ? readoutFor(climate) : view?.kind === "warming" ? warmingReadout(warming) : null;
 
-  // The Catalog tab opens STAC Browser on the dataset being viewed, if any
-  const catalogHref = catalog.selected ? `${STAC_BROWSER}/collections/${catalog.selected.id}` : STAC_BROWSER;
-
   return (
     <div className="app">
       {/* Shared with STAC Browser, so the map and catalog read as one site */}
@@ -39,7 +36,7 @@ export default function App() {
           <span>Cal-Adapt climate data catalog</span>
         </div>
         <nav className="site-tabs" aria-label="Views">
-          <a href={catalogHref}>Catalog</a>
+          <a href={STAC_BROWSER}>Catalog</a>
           <a href="./" aria-current="page">
             Map
           </a>
