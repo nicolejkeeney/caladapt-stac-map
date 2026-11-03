@@ -180,7 +180,11 @@ function StationDetail({ p, item }: { p: PlacesState; item: StacItem }) {
 
 function ProfileDetail({ p, items, variableLabels }: { p: PlacesState; items: StacItem[]; variableLabels?: Record<string, string> }) {
   const [chosen, setChosen] = useState<Record<string, string>>({});
-  const names: Record<string, Record<string, string> | undefined> = { model: MODEL_NAMES, variable: variableLabels };
+  const names: Record<string, Record<string, string> | undefined> = {
+    model: MODEL_NAMES,
+    variable: variableLabels,
+    "cmip6:experiment_id": SCENARIO_NAMES,
+  };
 
   // Each filter's options come from the files left after the filters above it
   let matching = items;
@@ -212,7 +216,7 @@ function ProfileDetail({ p, items, variableLabels }: { p: PlacesState; items: St
           Object.entries(item.assets).map(([key, a]) => (
             <li key={item.id + key}>
               <span>
-                {a.title ?? `${key.toUpperCase()} file`}
+                {a.title ?? (a.type === "application/netcdf" ? "NetCDF file" : `${key.toUpperCase()} file`)}
                 {item.properties["file:size"] && <small>{formatBytes(item.properties["file:size"])}</small>}
               </span>
               <a href={httpsHref(a.href)} download>

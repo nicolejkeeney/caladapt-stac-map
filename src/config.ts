@@ -471,6 +471,19 @@ export const PLACE_DATASETS: PlaceDataset[] = [
   ]),
   profile("xmy-persist", [TIME_PERIOD, MODEL, PERCENTILE]),
   profile("xmy-shock", [TIME_PERIOD, MODEL, { property: "shock_type", label: "Shock type" }]),
+  {
+    // 13 NOAA tide stations; one NetCDF file per sea level rise and emissions scenario
+    id: "sea-level",
+    collection: "sea-level-projections",
+    kind: "station",
+    idProperty: "station_code",
+    nameProperty: "station_name",
+    match: { type: "property", property: "station_id" },
+    filters: [
+      { property: "slr_scenario", label: "Sea level rise scenario" },
+      { property: "cmip6:experiment_id", label: "Emissions scenario" },
+    ],
+  },
 ];
 
 export const VARIABLE_NAMES: Record<string, string> = {
@@ -513,4 +526,5 @@ export const DATASET_VIEWS: Record<string, DatasetView> = {
   "standard-year": { kind: "places", placeDataset: "standard-year" },
   "xmy-persist": { kind: "places", placeDataset: "xmy-persist" },
   "xmy-shock": { kind: "places", placeDataset: "xmy-shock" },
+  "sea-level-projections": { kind: "places", placeDataset: "sea-level" },
 };
