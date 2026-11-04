@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import CollectionDetail from "./CollectionDetail";
 
 // The form of each collection's data, from its caladapt:spatial_type
-const KINDS = { grid: "Gridded maps", point: "Locations", county: "Area summaries", "boundary-aggregate": "Area summaries" };
+const KINDS = { grid: "Gridded maps", point: "Locations", "spatial-aggregate": "Area summaries" };
 
 function kindOf(c: StacCollection) {
   const type = c["caladapt:spatial_type"];
