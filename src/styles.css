@@ -473,7 +473,6 @@ input:not([type]) {
   gap: 8px;
 }
 
-.play,
 .step {
   flex: none;
   display: grid;
@@ -482,17 +481,6 @@ input:not([type]) {
   height: 40px;
   border-radius: 50%;
   cursor: pointer;
-}
-
-.play {
-  border: 0;
-  background: var(--pacific);
-}
-
-.play svg {
-  width: 16px;
-  height: 16px;
-  fill: var(--white);
 }
 
 .step {
@@ -510,7 +498,6 @@ input:not([type]) {
   stroke-linejoin: round;
 }
 
-.play:disabled,
 .step:disabled {
   opacity: 0.4;
   cursor: default;

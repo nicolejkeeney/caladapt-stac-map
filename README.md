@@ -4,7 +4,7 @@ A map-first way to explore the Cal-Adapt STAC catalog, written for planners, lig
 
 It has three modes:
 
-- **Year by year** draws LOCA2 gridded projections on the map using CalAdapt-Tiler. Users pick a measure (hottest day of the year, monthly highs and lows, precipitation, and so on), an emissions scenario and a climate model, then scrub or play through 1950–2100. Clicking the map shows the value at that spot.
+- **Year by year** draws LOCA2 gridded projections on the map using CalAdapt-Tiler. Users pick a measure (hottest day of the year, monthly highs and lows, precipitation, and so on), an emissions scenario and a climate model, then step through 1950–2100. Clicking the map shows the value at that spot.
 - **Warming levels** shows the multi-model WRF metrics from the Cal-Adapt Climate Metrics Map (extreme heat days, warm nights, extreme precipitation, fire weather) at 0.8–3.0 °C of global warming, with the range across the 4 models when you click. Metric definitions, ranges and colors mirror `cal-adapt-de-website/src/data/climate-metrics-map/metrics.ts`.
 - **Data for a place** shows counties or weather stations. Clicking one lists the matching STAC items with plain-language filters and download links (NetCDF), or a Python snippet for opening Zarr stores.
 
@@ -43,7 +43,7 @@ Each map mode has a **Get this data** section with copyable code for whatever is
 
 ## Known gaps and notes for a future tiler
 
-- **Tiles take about 1 s each.** The slider waits until it settles before requesting tiles, and "play" steps every 1.5 s.
+- **Tiles take about 1 s each.** The map waits until the time settles before requesting tiles. A play button was removed because each step took longer to load than it stayed on screen; it's worth bringing back with a faster tiler, waiting for tiles before each step.
 - **Single model, single year only.** The public will probably want multi-model averages and "change from historical" maps. These need either pre-computed layers or new tiler endpoints.
 - **`/statistics` mislabels times.** It does apply `datetime` (the means differ for 2015 and 2090), but the result is always keyed by the first timestamp, because `ZarrReader.band_names` reads the unselected time coordinate.
 - **Data extends beyond California** (the LOCA2 domain covers parts of NV, AZ and OR). The tiler could clip to the state boundary.
