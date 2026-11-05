@@ -31,6 +31,7 @@ export interface Readout {
 interface Props {
   raster: string | null;
   rasterTileSize?: number; // smaller makes the map ask for more, smaller tiles
+  rasterBounds?: [number, number, number, number]; // where the raster has data, so no tiles are requested outside it
   places: PlacesLayer | null;
   footprint: GeoJSON.FeatureCollection | null;
   selectedPlaceId: string | null;
@@ -42,14 +43,16 @@ interface Props {
 
 const FOOTPRINT_LAYERS = ["footprint-fill", "footprint-line", "footprint-circle"];
 const PLACE_LAYERS = ["places-fill", "places-line", "places-hover", "places-circle", "places-selected"];
+const CA_RASTER_BOUNDS: [number, number, number, number] = [-128.5, 29.5, -111, 45.1];
 
-export default function MapView({ raster, rasterTileSize = 256, places, footprint, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
+export default function MapView({ raster, rasterTileSize = 256, rasterBounds = CA_RASTER_BOUNDS, places, footprint, selectedPlaceId, readout, onReadoutClose, onPlaceClick, onMapClick }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const [ready, setReady] = useState(false);
   const [tilesLoading, setTilesLoading] = useState(false);
+  const rasterSource = useRef(""); // tile size and bounds of the current climate source
 
   // Handlers change every render; keep the latest in a ref so map listeners
   // are attached only once.
@@ -102,8 +105,9 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
     const map = mapRef.current;
     if (!map || !ready) return;
     const source = map.getSource("climate") as RasterTileSource | undefined;
-    // A different tile size needs a new source
-    if (!raster || (source && source.tileSize !== rasterTileSize)) {
+    // A different tile size or extent needs a new source
+    const key = `${rasterTileSize}/${rasterBounds.join(",")}`;
+    if (!raster || (source && rasterSource.current !== key)) {
       if (map.getLayer("climate")) map.removeLayer("climate");
       if (source) map.removeSource("climate");
       if (!raster) return;
@@ -111,10 +115,12 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
       source.setTiles([raster]);
       return;
     }
-    map.addSource("climate", { type: "raster", tiles: [raster], tileSize: rasterTileSize, bounds: [-128.5, 29.5, -111, 45.1] });
+    map.addSource("climate", { type: "raster", tiles: [raster], tileSize: rasterTileSize, bounds: rasterBounds });
+    rasterSource.current = key;
     const firstLabel = map.getStyle().layers.find((l) => l.type === "symbol")?.id;
     map.addLayer({ id: "climate", type: "raster", source: "climate", paint: { "raster-opacity": 0.85, "raster-fade-duration": 0 } }, firstLabel);
-  }, [raster, rasterTileSize, ready]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raster, rasterTileSize, rasterBounds.join(","), ready]);
 
   // Counties or stations
   useEffect(() => {

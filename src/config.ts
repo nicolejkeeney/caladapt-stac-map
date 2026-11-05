@@ -20,6 +20,13 @@ export const STEPS: Record<Frequency, { label: string; note: string }> = {
   yrmax: { label: "Yearly maximum", note: "The highest value reached that year." },
 };
 
+// WRF's nested grids, finest first: each covers a larger area at coarser detail
+export const GRIDS: Record<string, string> = {
+  d03: "3 km (California)",
+  d02: "9 km (western US)",
+  d01: "45 km (western North America)",
+};
+
 export interface Unit {
   label: string;
   convert: (raw: number) => number;
@@ -192,11 +199,11 @@ export const GRIDDED_DATASETS: Record<string, GriddedDataset> = {
     aboutTerm: { slug: "statistical-downscaling", label: "statistically downscaled" },
   },
   "wrf-ucla": {
-    // The 3 km California grid, bias-adjusted runs
-    filters: { "cmip6:grid_label": "d03", bias_adjusted: true },
+    // Bias-adjusted runs; the grid is picked in the panel
+    filters: { bias_adjusted: true },
     layers: WRF_LAYERS,
     steps: ["mon"],
-    about: "WRF: climate models dynamically downscaled to a 3 km grid by UCLA.",
+    about: "WRF: climate models dynamically downscaled by UCLA, at 3 km over California and coarser over the western US.",
     aboutTerm: { slug: "dynamical-downscaling", label: "dynamically downscaled" },
   },
   "pv-generation": {

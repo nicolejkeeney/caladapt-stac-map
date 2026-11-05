@@ -1,4 +1,4 @@
-import { GriddedDataset, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER, STEPS } from "../config";
+import { GriddedDataset, GRIDS, GUIDANCE_SITE, MODEL_NAMES, MONTHS, STAC_BROWSER, STEPS } from "../config";
 import { loca2Methods } from "../snippets";
 import type { ClimateState } from "../useClimate";
 import GetData from "./GetData";
@@ -94,6 +94,22 @@ export default function ClimatePanel({ c }: { c: ClimateState }) {
           </p>
         )}
       </div>
+
+      {c.grids.length > 1 && (
+        <div className="group">
+          <label className="field-label" htmlFor="grid">
+            Spatial resolution
+          </label>
+          <select id="grid" value={c.grid} onChange={(e) => c.setGrid(e.target.value)}>
+            {c.grids.map((g) => (
+              <option key={g} value={g}>
+                {GRIDS[g]}
+              </option>
+            ))}
+          </select>
+          <p className="note">Finer grids show more detail but cover a smaller area.</p>
+        </div>
+      )}
 
       <fieldset className="group">
         <legend>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FIRST_FUTURE_YEAR, Frequency, GRIDDED_DATASETS, SCENARIOS } from "./config";
+import { FIRST_FUTURE_YEAR, Frequency, GRIDDED_DATASETS, GRIDS, SCENARIOS } from "./config";
 import { buildColorTable } from "./colormap";
 import { eq, pointValue, searchAll, StacItem, tileUrl } from "./stac";
 
@@ -38,6 +38,7 @@ export function useClimate(active: boolean, collection = "loca2") {
   const dataset = GRIDDED_DATASETS[collection] ?? GRIDDED_DATASETS.loca2;
   const [layerId, setLayerId] = useState(dataset.layers[0].id);
   const [timeStep, setTimeStep] = useState<Frequency>("mon");
+  const [grid, setGrid] = useState("d03");
   const [scenario, setScenario] = useState(SCENARIOS[1].id);
   const [model, setModel] = useState("");
   // The time on the map, as a UTC timestamp; how precise it is depends on the time step
@@ -83,7 +84,20 @@ export function useClimate(active: boolean, collection = "loca2") {
     if (timeSteps.length && !timeSteps.includes(timeStep)) setTimeStep(timeSteps.includes("mon") ? "mon" : timeSteps[0]);
   }, [timeSteps, timeStep]);
 
-  const items = useMemo(() => allItems?.filter((i) => prop(i, "table_id") === timeStep) ?? null, [allItems, timeStep]);
+  // Grids this variable has at this time step, finest first
+  const grids = useMemo(() => {
+    const have = new Set((allItems ?? []).filter((i) => prop(i, "table_id") === timeStep).map((i) => prop(i, "grid_label")));
+    return Object.keys(GRIDS).filter((g) => have.has(g));
+  }, [allItems, timeStep]);
+
+  useEffect(() => {
+    if (grids.length && !grids.includes(grid)) setGrid(grids[0]);
+  }, [grids, grid]);
+
+  const items = useMemo(
+    () => allItems?.filter((i) => prop(i, "table_id") === timeStep && prop(i, "grid_label") === grid) ?? null,
+    [allItems, timeStep, grid],
+  );
 
   // Future scenarios this dataset has runs for
   const scenarios = useMemo(() => {
@@ -202,6 +216,9 @@ export function useClimate(active: boolean, collection = "loca2") {
     setTimeStep,
     timeSteps,
     unmappedSteps,
+    grid,
+    setGrid,
+    grids,
     rescale,
     scenario,
     setScenario,
@@ -227,6 +244,7 @@ export function useClimate(active: boolean, collection = "loca2") {
     item,
     datetime,
     raster: active ? raster : null,
+    rasterBounds: item?.bbox as [number, number, number, number] | undefined,
     probe: active ? probe : null,
     setProbeAt: (lngLat: [number, number] | null) => setProbe(lngLat ? { lngLat, status: "loading", value: null } : null),
   };

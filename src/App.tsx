@@ -81,6 +81,7 @@ export default function App() {
           <MapView
             raster={climate.raster ?? warming.raster}
             rasterTileSize={climate.raster ? climate.dataset.tileSize : undefined}
+            rasterBounds={climate.raster ? climate.rasterBounds : undefined}
             places={places.layer ?? boundary.layer}
             footprint={view ? null : catalog.footprint}
             selectedPlaceId={(view?.kind === "boundary" ? boundary.place : places.place)?.id ?? null}

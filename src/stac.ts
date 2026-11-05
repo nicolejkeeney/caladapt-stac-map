@@ -4,6 +4,7 @@ export interface StacItem {
   id: string;
   collection: string;
   geometry: GeoJSON.Geometry | null;
+  bbox?: number[];
   properties: Record<string, any>;
   assets: Record<string, { href: string; type?: string; title?: string; "file:size"?: number }>;
 }
