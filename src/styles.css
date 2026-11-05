@@ -526,7 +526,8 @@ input:not([type]) {
   align-items: center;
 }
 
-.popup-loading span {
+.popup-loading span,
+.loading-dots span {
   width: 9px;
   height: 9px;
   border-radius: 50%;
@@ -534,11 +535,13 @@ input:not([type]) {
   animation: popup-dot 1s ease-in-out infinite;
 }
 
-.popup-loading span:nth-child(2) {
+.popup-loading span:nth-child(2),
+.loading-dots span:nth-child(2) {
   animation-delay: 0.15s;
 }
 
-.popup-loading span:nth-child(3) {
+.popup-loading span:nth-child(3),
+.loading-dots span:nth-child(3) {
   animation-delay: 0.3s;
 }
 
@@ -556,10 +559,40 @@ input:not([type]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .popup-loading span {
+  .popup-loading span,
+  .loading-dots span {
     animation: none;
     opacity: 0.6;
   }
+}
+
+/* Shown over the map while climate tiles load */
+.map-loading {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--white);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  font-size: 14px;
+  color: var(--text);
+  pointer-events: none;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.loading-dots span {
+  width: 6px;
+  height: 6px;
 }
 
 /* A county's values at each warming level (boundary summaries) */

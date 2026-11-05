@@ -49,6 +49,7 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
   const [ready, setReady] = useState(false);
+  const [tilesLoading, setTilesLoading] = useState(false);
 
   // Handlers change every render; keep the latest in a ref so map listeners
   // are attached only once.
@@ -66,6 +67,11 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
     map.on("load", () => setReady(true));
+    // Climate tiles take seconds each, so say when they're on their way
+    map.on("dataloading", (e) => {
+      if ("sourceId" in e && e.sourceId === "climate") setTilesLoading(true);
+    });
+    map.on("idle", () => setTilesLoading(false));
 
     map.on("click", (e) => {
       const { places: p, onPlaceClick: placeClick, onMapClick: mapClick } = handlers.current;
@@ -256,6 +262,20 @@ export default function MapView({ raster, rasterTileSize = 256, places, footprin
     return () => ro.disconnect();
   }, []);
 
-  return <div ref={container} className="map" role="region" aria-label="Map of California" />;
+  return (
+    <>
+      <div ref={container} className="map" role="region" aria-label="Map of California" />
+      {tilesLoading && (
+        <p className="map-loading" role="status">
+          Loading map
+          <span className="loading-dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </p>
+      )}
+    </>
+  );
 }
 
